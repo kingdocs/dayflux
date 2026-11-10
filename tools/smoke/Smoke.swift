@@ -117,6 +117,53 @@ struct Smoke {
               SchedulePolicy.shouldRun(now: morning, calendar: cal, hour: 8, minute: 30,
                                        lastRunDate: "20261109", lastAttempt: at(9, 9, 0)))
 
+        // nextFire：单次定时器触发点计算（取代每分钟轮询）
+        print("\n=== 调度触发点（nextFire）===")
+        let nextCompleted = SchedulePolicy.nextFire(now: at(10, 9, 0), calendar: cal,
+                                                   hour: 8, minute: 30,
+                                                   lastRunDate: "20261110", lastAttempt: nil)
+        check("今天已完成 → 明天 08:30",
+              cal.component(.day, from: nextCompleted) == 11
+              && cal.component(.hour, from: nextCompleted) == 8
+              && cal.component(.minute, from: nextCompleted) == 30,
+              "\(nextCompleted)")
+
+        let nextBefore = SchedulePolicy.nextFire(now: at(10, 7, 0), calendar: cal,
+                                                 hour: 8, minute: 30,
+                                                 lastRunDate: nil, lastAttempt: nil)
+        check("未到设定时间 → 今天 08:30",
+              cal.component(.day, from: nextBefore) == 10
+              && cal.component(.hour, from: nextBefore) == 8
+              && cal.component(.minute, from: nextBefore) == 30,
+              "\(nextBefore)")
+
+        let nowMissed = at(10, 9, 0)
+        let nextMissed = SchedulePolicy.nextFire(now: nowMissed, calendar: cal,
+                                                 hour: 8, minute: 30,
+                                                 lastRunDate: nil, lastAttempt: nil)
+        check("已错过且无尝试记录 → 立即补偿(+1s)",
+              nextMissed.timeIntervalSince(nowMissed) > 0
+              && nextMissed.timeIntervalSince(nowMissed) <= 2,
+              "\(String(format: "%.1f", nextMissed.timeIntervalSince(nowMissed)))s")
+
+        let attemptCooling = at(10, 8, 57)  // 3 分钟前的一次失败尝试
+        let nextCooling = SchedulePolicy.nextFire(now: at(10, 9, 0), calendar: cal,
+                                                  hour: 8, minute: 30,
+                                                  lastRunDate: nil, lastAttempt: attemptCooling)
+        check("冷却中 → 上次尝试 +5min (即 09:02)",
+              cal.component(.hour, from: nextCooling) == 9
+              && cal.component(.minute, from: nextCooling) == 2,
+              "\(nextCooling)")
+
+        let attemptOld = at(10, 8, 50)  // 10 分钟前
+        let nextOld = SchedulePolicy.nextFire(now: at(10, 9, 0), calendar: cal,
+                                              hour: 8, minute: 30,
+                                              lastRunDate: nil, lastAttempt: attemptOld)
+        check("冷却已过 → 立即补偿(+1s)",
+              nextOld.timeIntervalSince(at(10, 9, 0)) > 0
+              && nextOld.timeIntervalSince(at(10, 9, 0)) <= 2,
+              "\(String(format: "%.1f", nextOld.timeIntervalSince(at(10, 9, 0))))s")
+
         print("\n结果: \(failures == 0 ? "全部通过" : "\(failures) 项失败")")
         exit(failures == 0 ? 0 : 1)
     }

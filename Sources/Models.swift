@@ -177,6 +177,30 @@ enum SchedulePolicy {
         }
         return true
     }
+
+    /// 计算下一次应触发自动检查的时间点，配合「单次 Timer」使用（取代每分钟轮询）。
+    /// - 今天已完成：明天同一时刻。
+    /// - 未完成且未到设定时间：今天的设定时刻。
+    /// - 未完成且已错过（含睡眠唤醒补偿）：冷却内则 `lastAttempt + retryInterval`，否则立即（+1s）。
+    static func nextFire(now: Date = Date(),
+                         calendar: Calendar = .current,
+                         hour: Int,
+                         minute: Int,
+                         lastRunDate: String?,
+                         lastAttempt: Date?) -> Date {
+        let today = DWFormat.todayString(now)
+        let target = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now)!
+        if lastRunDate == today {
+            return calendar.date(byAdding: .day, value: 1, to: target)!
+        }
+        if now < target {
+            return target
+        }
+        if let last = lastAttempt, now.timeIntervalSince(last) < retryInterval {
+            return last.addingTimeInterval(retryInterval)
+        }
+        return now.addingTimeInterval(1)
+    }
 }
 
 // MARK: - 诊断日志与备用网络通道

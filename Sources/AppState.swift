@@ -34,6 +34,8 @@ final class AppState: ObservableObject {
     private var lastScheduledAttempt: Date?
     private var timer: Timer?
     private var wakeObserver: NSObjectProtocol?
+    /// 主窗口当前是否可见，由 AppDelegate 通知。用于决定自动任务完成后是否保留预览内存。
+    private var mainWindowVisible = false
 
     // MARK: - 生命周期
 
@@ -42,13 +44,12 @@ final class AppState: ObservableObject {
         launchAtLogin = LaunchAtLoginService.shared.isEnabled()
         needsDirectorySetup = (settings.directoryPath == nil)
 
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
-        }
+        // 单次定时到下个执行点，取代每分钟轮询；睡眠唤醒后由通知重算（自带补偿）。
+        scheduleNext()
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
+            Task { @MainActor in self?.scheduleNext() }
         }
 
         Task {
@@ -248,8 +249,8 @@ final class AppState: ObservableObject {
     // lastRunDate 只在核心链路全部成功后写入：任务失败当天仍会按冷却间隔重试。
 
     private func tick() {
-        guard settings.autoDownload || settings.autoChange else { return }
-        guard !isRunningScheduledTask else { return }
+        guard settings.autoDownload || settings.autoChange else { scheduleNext(); return }
+        guard !isRunningScheduledTask else { scheduleNext(); return }
         let now = Date()
         guard SchedulePolicy.shouldRun(
             now: now,
@@ -257,14 +258,19 @@ final class AppState: ObservableObject {
             minute: settings.dailyMinute,
             lastRunDate: settings.lastRunDate,
             lastAttempt: lastScheduledAttempt
-        ) else { return }
+        ) else { scheduleNext(); return }
 
         let today = DWFormat.todayString(now)
         isRunningScheduledTask = true
         lastScheduledAttempt = now
         DWLog.schedule("开始当天任务 date=\(today)")
         Task { @MainActor in
-            defer { isRunningScheduledTask = false }
+            defer {
+                isRunningScheduledTask = false
+                // 后台（窗口不可见）自动任务完成后无需常驻预览图，释放以省内存。
+                if !mainWindowVisible { releasePreviewResources() }
+                scheduleNext()
+            }
             let succeeded = await performScheduledTask()
             if succeeded {
                 settings.lastRunDate = today
@@ -275,6 +281,41 @@ final class AppState: ObservableObject {
                 setMessage("自动任务未完成，将在 5 分钟后重试；已有文件不受影响。", isError: true)
             }
         }
+    }
+
+    /// 计算并挂起「下一次执行点」的单次定时器，取代每分钟轮询。
+    private func scheduleNext() {
+        let now = Date()
+        let next = SchedulePolicy.nextFire(
+            now: now,
+            hour: settings.dailyHour,
+            minute: settings.dailyMinute,
+            lastRunDate: settings.lastRunDate,
+            lastAttempt: lastScheduledAttempt
+        )
+        let interval = max(0.5, next.timeIntervalSinceNow)
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.tick() }
+        }
+        DWLog.schedule("下次调度检查 in \(Int(interval))s")
+    }
+
+    /// 由 AppDelegate 在窗口显隐时通知，决定自动任务后是否保留预览内存。
+    func notifyWindowVisibility(_ visible: Bool) {
+        mainWindowVisible = visible
+    }
+
+    /// 释放预览图与缓存的原图数据；窗口打开时由 refresh 重新加载（磁盘缓存秒回，不联网）。
+    func releasePreviewResources() {
+        cachedImage = nil
+        previewImage = nil
+    }
+
+    /// 窗口打开时若预览为空，从磁盘缓存重新加载（不联网）。
+    func ensurePreviewLoadedIfNeeded() {
+        guard cachedImage == nil else { return }
+        Task { await self.refresh() }
     }
 
     private func performScheduledTask() async -> Bool {

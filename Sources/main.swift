@@ -46,7 +46,7 @@ private enum DelegateHolder {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var statusBarAction: StatusBarAction?
@@ -115,11 +115,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             window.setContentSize(NSSize(width: 430, height: fitting.height))
         }
         window.center()
+        window.delegate = self
     }
 
     private func showWindow() {
+        state.notifyWindowVisibility(true)
+        state.ensurePreviewLoadedIfNeeded()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        state.notifyWindowVisibility(false)
+        state.releasePreviewResources()
+        dwStatusLog("主窗口关闭 → 释放预览资源（窗口重开时从磁盘缓存恢复）")
     }
 
     // MARK: - 菜单栏
