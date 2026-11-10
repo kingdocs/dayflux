@@ -101,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         let hosting = NSHostingController(rootView: ContentView(state: state))
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 430, height: 580),
-            styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered, defer: false
         )
         window.contentViewController = hosting
@@ -109,6 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
+        // 只保留「关闭」按钮：去掉最小化（styleMask 不含 .miniaturizable），
+        // 并显式隐藏最小化与绿色缩放/全屏两个标准按钮。
+        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        window.standardWindowButton(.zoomButton)?.isHidden = true
         window.setFrameAutosaveName("DailyWallMainWindow")
         let fitting = hosting.view.fittingSize
         if fitting.height > 200 {
@@ -121,8 +125,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private func showWindow() {
         state.notifyWindowVisibility(true)
         state.ensurePreviewLoadedIfNeeded()
+        positionNearMouse()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 把主窗口定位到鼠标光标附近（菜单栏 app 常见行为：窗口出现在光标下方），
+    /// 并约束在光标所在屏幕的可见区域内，避免超出边界被裁切。
+    private func positionNearMouse() {
+        guard let window = window else { return }
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) })
+            ?? NSScreen.main
+            ?? NSScreen.screens[0]
+        let visible = screen.visibleFrame
+        let size = window.frame.size
+        let margin: CGFloat = 8
+
+        // 窗口顶边贴在鼠标下方 6pt，水平以鼠标为中心
+        var originX = mouse.x - size.width / 2
+        var originY = mouse.y - 6 - size.height
+        if originX < visible.minX + margin { originX = visible.minX + margin }
+        if originX + size.width > visible.maxX - margin { originX = visible.maxX - margin - size.width }
+        if originY < visible.minY + margin { originY = visible.minY + margin }
+        if originY + size.height > visible.maxY - margin { originY = visible.maxY - margin - size.height }
+        window.setFrameOrigin(NSPoint(x: originX, y: originY))
     }
 
     func windowWillClose(_ notification: Notification) {

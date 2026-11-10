@@ -29,6 +29,7 @@
 - **可拷走的交付包**：`DailyWall.zip`（约 1.2 MB，含程序图标）。用 `ditto -c -k --sequesterRsrc --keepParent` 打包；已验证解压后 `codesign -v` 通过、`Authority=DailyWall Self-Use Code Signing`、无 `com.apple.quarantine`。
 - 自签版实机启动已验证：元数据 866 B + UHD 图 3,556,980 B 拉取成功、主窗口 430×560 正常、偏好与 `lastRunDate` 未变、Dimble 启动器入口（`open -b`）正常唤出主窗口。
 - 替换前的 ad-hoc 版本备份在 `/tmp/DailyWall-adhoc-backup.app`（临时目录，重启后可能被系统清理）；长期回退路径是源码 + `DW_SIGN_MODE=adhoc`。
+- **窗口行为**：主窗口仅保留「关闭」按钮（无最小化 / 缩放）；从菜单栏图标或 Dimble 启动器打开时，窗口出现在鼠标光标附近（光标下方、水平居中并约束在所在屏幕可见区域内，不再固定屏幕中央）。
 
 ## 程序图标
 
