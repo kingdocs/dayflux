@@ -13,10 +13,11 @@ DailyWall.zip
 # 本机构建序号（当天第几次成功编译），换机重新从 1 开始
 .buildcounter
 
-# 界面证据截图与第三方壁纸示意素材：仅本机留存
+# 界面证据截图：默认仅本机留存，只放行 README 用到的两张
 tools/*.png
 tools/*.jpg
 !tools/appicon_preview.png
+!tools/main-window.png
 
 # 诊断原始证据：含本机应用与窗口信息，只保留分析报告
 diagnostics/**/*.ips
