@@ -6,7 +6,7 @@
 
 ## 一、一句话结论
 
-自签证书能解决的是「**每次重新编译，系统在权限眼里就换了一个 app**」；它解决不了 Gatekeeper、公证、Team ID，也消不掉 Dimble 的「不兼容」标记。而 Dimble 那边老板已经用「应用启动器 + 始终显示」绕过去了，所以**自签现在不是必须项**。
+自签证书能解决的是「**每次重新编译，系统在权限眼里就换了一个 app**」；它解决不了 Gatekeeper、公证、Team ID。第一至五节是启用前的实验数据与判断（当时结论为「不是必须项」），最终于 10:34 经老板确认正式启用。
 
 ## 二、实测数据（本机 macOS 27.2 / 26B123）
 
@@ -20,7 +20,7 @@
 | `spctl -a -vvv -t execute` | rejected | **rejected**（`origin=DailyWall Self-Use Code Signing`） |
 | `security find-identity -v -p codesigning` | 0 valid | 隔离钥匙串内 1 张，但标 `CSSMERR_TP_NOT_TRUSTED` |
 
-对照 Dimble 的正式签名 DR：`anchor apple generic and identifier "app.fif7y.Pelmet" and … certificate leaf[subject.OU] = YW9UY68SQ7`。差别在于 **Apple 根证书链 + 团队 ID**，自签证书拿不到，公证也拿不到。
+对照经 Apple 正常签名的应用 DR（`anchor apple generic` + `certificate leaf[subject.OU]` 团队 ID）：差别在于 **Apple 根证书链 + 团队 ID**，自签证书拿不到，公证也拿不到。
 
 ## 三、能解决 / 不能解决
 
@@ -30,15 +30,13 @@
 
 **不能解决**
 - `spctl` / Gatekeeper 仍拒绝；没有 `anchor apple generic`、TeamIdentifier 仍 `not set`、无法公证、无法上架或对外分发。
-- 不会让 Dimble 把「!」去掉（那个标记来自 macOS 27 按 LaunchServices 注册 + 代码签名身份隐藏状态项的机制）。但已经用启动器绕开，**不需要它消失**。
 - 不会让别的电脑直接信任这台机器签出的 app。
 
 ## 四、启用要付的代价（所以本轮没擅自做）
 
 1. **签名身份会变一次**：从 ad-hoc 换成自签，等于系统眼里的「旧 app」变「新 app」，TCC 权限可能要重新授权一次。
-2. **可能牵动 Dimble**：老板刚把启动器设为「始终显示」并确认 Dimble 不再崩，这是本轮明确说「先不改动」的部分。启动器按 bundle id / 路径记录，理论上不受签名影响，但没有实测保证，重签后可能需要再配一次。
-3. **多一份要保管的东西**：`dailywall-selfsigned.p12` 含私钥，密码放在 `.p12-password`（两者都不入库），有效期至 **2036-11-07**。丢失或过期后重新生成 = 换身份，等于回到原点。换电脑、重装系统都要重新导入。
-4. 每次 `./build.sh` 之后要多跑一次签名脚本，或者把构建脚本改成调用它。
+2. **多一份要保管的东西**：`dailywall-selfsigned.p12` 含私钥，密码放在 `.p12-password`（两者都不入库），有效期至 **2036-11-07**。丢失或过期后重新生成 = 换身份，等于回到原点。换电脑、重装系统都要重新导入。
+3. 每次 `./build.sh` 之后要多跑一次签名脚本，或者把构建脚本改成调用它。
 
 ## 五、文件清单
 
@@ -68,10 +66,9 @@
 | 冒烟测试 | 20/20 全通过（含 6 项调度策略） |
 | 实机启动 | 新进程 64112；元数据 866 B + UHD 3,556,980 B 成功；主窗口 430×560 在屏 |
 | 偏好设置 | `autoDownload/autoChange=1`、`lastRunDate=20261110`、`showMenuBarIcon=0`，一项未改 |
-| Dimble | 进程 55161 仍在；崩溃报告仍 6 份（无新增）；日志正常无新崩溃 |
-| Dimble 启动器 | `open -b local.dailywall.selfuse` → 日志「收到重新打开请求 → 显示主窗口」 |
+| 重新打开入口 | `open -b local.dailywall.selfuse` → 日志「收到重新打开请求 → 显示主窗口」 |
 | 交付包 | `DailyWall.zip` 1.2 MB，解压回验签名、图标、无 quarantine 均通过 |
 
-**遗留边界（未变）**：`TeamIdentifier=not set`、`spctl -a` 仍 rejected、无 Apple 签发链、无法公证；Dimble 的「不兼容」标记不会因自签消失，本机已用「应用启动器 + 始终显示」绕过。
+**遗留边界（未变）**：`TeamIdentifier=not set`、`spctl -a` 仍 rejected、无 Apple 签发链、无法公证。属签名机制本身的限制，本机无解。
 
 **回退**：`DW_SIGN_MODE=adhoc ./build.sh` 后用 `ditto` 覆盖安装版；或直接用 `/tmp/DailyWall-adhoc-backup.app`（临时备份，重启后可能被系统清理）。换身份会使已授予的 TCC 权限失效一次，需重新授权。

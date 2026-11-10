@@ -19,11 +19,6 @@ tools/*.jpg
 !tools/appicon_preview.png
 !tools/main-window.png
 
-# 诊断原始证据：含本机应用与窗口信息，只保留分析报告
-diagnostics/**/*.ips
-diagnostics/**/*.zip
-diagnostics/**/dimble-log-excerpt.txt
-
 # 系统与编辑器
 .DS_Store
 *.swp

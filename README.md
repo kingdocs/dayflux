@@ -39,9 +39,9 @@
 
 - **已安装**：`/Applications/DailyWall.app`（系统级「应用程序」目录，自签版，2026-11-10 13:20 从 `~/Applications` 迁移至此并重启；LaunchServices 已重新注册 `local.dailywall.selfuse` → 新路径），可在访达「应用程序」或启动台直接双击。
 - **可拷走的交付包**：`DailyWall.zip`（约 1.2 MB，含程序图标）。用 `ditto -c -k --sequesterRsrc --keepParent` 打包；已验证解压后 `codesign -v` 通过、`Authority=DailyWall Self-Use Code Signing`、无 `com.apple.quarantine`。
-- 自签版实机启动已验证：元数据 866 B + UHD 图 3,556,980 B 拉取成功、主窗口 430×560 正常、偏好与 `lastRunDate` 未变、Dimble 启动器入口（`open -b`）正常唤出主窗口。
+- 自签版实机启动已验证：元数据 866 B + UHD 图 3,556,980 B 拉取成功、主窗口 430×560 正常、偏好与 `lastRunDate` 未变、`open -b` 重新打开入口正常唤出主窗口。
 - 替换前的 ad-hoc 版本备份在 `/tmp/DailyWall-adhoc-backup.app`（临时目录，重启后可能被系统清理）；长期回退路径是源码 + `DW_SIGN_MODE=adhoc`。
-- **窗口行为**：主窗口仅保留「关闭」按钮（无最小化 / 缩放）；从菜单栏图标或 Dimble 启动器打开时，窗口出现在鼠标光标附近（光标下方、水平居中并约束在所在屏幕可见区域内，不再固定屏幕中央）。
+- **窗口行为**：主窗口仅保留「关闭」按钮（无最小化 / 缩放）；从菜单栏图标打开时，窗口出现在鼠标光标附近（光标下方、水平居中并约束在所在屏幕可见区域内，不再固定屏幕中央）。
 
 ## 程序图标
 
@@ -62,7 +62,7 @@
 
 ## 首次使用
 
-1. 启动后主窗口会显示，并在顶部提示「首次使用请选择保存目录」。默认建议目录是 `~/Pictures/DailyWall`；点「选择目录」可改。
+1. 启动后应用只驻留菜单栏、不弹主窗口；左键点菜单栏图标调出主界面，顶部会提示「首次使用请选择保存目录」。默认建议目录是 `~/Pictures/DailyWall`；点「选择目录」可改。
 2. 目录只授权给这一个路径。应用**不会**删除、移动、重命名目录里的任何文件，也不做缓存清理到该目录。
 3. **左键点击菜单栏图标直接打开主窗口**；右键才弹出菜单（今日标题、立即下载、立即设置桌面、设置、退出）。关闭主窗口不会退出应用。
 
@@ -83,32 +83,17 @@
 - **「完成」按钮固定在顶部**：不随内容滚动，任何位置都能直接关闭设置面板；也支持 Esc 关闭。
 - **说明改为问号气泡**（2026-11-10）：每个分组标题后有一个圆形 `?` 图标，点击弹出白色圆角气泡说明（参照 AlDente 样式，箭头指向图标）；界面不再常驻灰色小字，视觉更简洁。再点图标或点别处即可收起。
 
-## 菜单栏交互与 Dimble 启动器（2026-11-10 新增）
+## 菜单栏交互
 
 | 操作 | 结果 |
 |---|---|
 | 左键点击 DailyWall 菜单栏图标 | **直接显示主窗口**，不弹菜单、不用在菜单项里选 |
 | 右键点击（或 Control + 左键） | 弹出菜单：打开主窗口、今日标题、立即下载、立即设置桌面、设置…、退出 |
-| 从 Dimble 启动器 / 启动台 / 访达双击打开 | 直接显示主窗口（`applicationShouldHandleReopen` 无条件 `showWindow()`） |
+| 从启动台 / 访达双击打开 | 直接显示主窗口（`applicationShouldHandleReopen` 无条件 `showWindow()`） |
 
-设置面板最上方「菜单栏」分组有 **「显示菜单栏图标」** 开关（偏好键 `dw.showMenuBarIcon`，默认开）。关闭时用 `NSStatusBar.removeStatusItem` 彻底移除状态项；关闭后仍可从主窗口任意一行设置里改回来，或从访达双击打开应用。
+应用启动后**不弹主窗口**，只驻留菜单栏；需要时点图标调出。设置面板最上方「菜单栏」分组有 **「显示菜单栏图标」** 开关（偏好键 `dw.showMenuBarIcon`，默认开）。关闭时用 `NSStatusBar.removeStatusItem` 彻底移除状态项；关闭后仍可从主窗口任意一行设置里改回来，或从访达双击打开应用。
 
 **实测验证（2026-11-10）**：辅助功能接口按下状态项触发「左键 → 显示主窗口」；`open -b local.dailywall.selfuse` 触发「收到重新打开请求 → 显示主窗口」；关闭开关后日志为「状态项未创建」且 AX 查询 `AXExtrasMenuBar` 返回 `-25212`（系统里确实没有状态项）；日志 `/tmp/dw_status.log` 亦记录了「右键 → 弹出菜单」分支。
-
-### 为什么 Dimble 提示「不兼容的应用」
-
-macOS 27 的隐藏机制在私有框架 `MenuBarClientCore`：Dimble 只提交「哪些 app 保持可见」的名单，**由系统按拥有图标的 app 身份（LaunchServices 注册 + 代码签名）隐藏并重排**。DailyWall 是纯 Command Line Tools 手工构建的自用 app，无 Team ID、无 Apple 签发链、未公证，系统名单里查不到它（Dimble 日志里 `listed=no remembered=none`），于是只要有图标被隐藏，macOS 就把 DailyWall 的状态项移出菜单栏；Dimble 管不了，才标「!」。这是 macOS 限制，不是应用缺陷（关掉 Dimble 后图标立即正常）。
-
-2026-11-10 起已改用自签证书固定身份（重建不再换 cdhash），但自签证书**没有 `anchor apple generic` 与 Team ID，仍消不掉这个「!」**；本机已用启动器方案完全绕过，不需要靠签名解决。
-
-**官方解法（Dimble 应用启动器，本机已采用）**：
-
-1. 在 Dimble 弹窗点「添加启动器」，或到 `设置 → 菜单栏 → 应用启动器` 添加 `DailyWall`。
-2. 在 DailyWall 设置面板最上方「菜单栏」分组，关闭「显示菜单栏图标」（本机 `dw.showMenuBarIcon=0`）。
-3. 启动器设为**始终显示／不隐藏**：本机实测这样配置后 Dimble 不再崩溃（此前放到隐藏区会触发 0.4.0-beta.2 的 Swift 并发断言，见 `diagnostics/dimble-crash-20261110/`）。
-4. 之后左键点 Dimble 那个启动器图标即可直接打开主窗口；该图标属于 Dimble，身份稳定，能被正常管理。
-
-替代方案：不启用 Dimble 的隐藏功能或退出 Dimble，DailyWall 自己的图标即可正常工作。
 
 ## 自动化口径
 
@@ -141,14 +126,13 @@ macOS 27 的隐藏机制在私有框架 `MenuBarClientCore`：Dimble 只提交�
 | 项 | 说明 |
 |---|---|
 | 图形界面 | 目录/通知授权弹窗、桌面是否真的更换、VoiceOver 表现，仍需实机人工确认 |
-| 签名 | 自签代码签名证书（2026-11-10 起）。身份固定、重建不丢权限；但无 Apple 信任链与 Team ID，`spctl` 仍 rejected、不能公证、不能消除 Dimble 的「不兼容」判定。见「代码签名」一节 |
+| 签名 | 自签代码签名证书（2026-11-10 起）。身份固定、重建不丢权限；但无 Apple 信任链与 Team ID，`spctl` 仍 rejected、不能公证、不能对外分发（签名机制限制，本机无解）。见「代码签名」一节 |
 | 通知 | 默认关闭；系统拒绝授权或未签名环境不可用时静默降级为应用内状态提示，不影响下载与换桌面 |
 | 登录启动 | 通过 `SMAppService`，注册失败仅提示一次，不反复弹窗 |
 | 地区 | 已砍掉。实测 `mkt` 单独传入不改变返回内容；固定中文、固定 `zh-CN` 请求 |
 | 兼容性 | 只在 macOS 27.2 单台设备验证，未做跨版本兼容测试 |
 | 窗口缩放 | 主窗口固定宽度 430pt，未做缩放适配；预览区固定 398×224（16:9），与参考稿的卡片式设计一致 |
 | 定时调度 | 2026-11-10 08:46 实机验证通过：自动生成 `DailyWall_20261110_zh-CN.jpg`。10:08 端到端复验「失败当天不重试」修复：清空标记后重启 → 日志显示任务成功 → 才写回 `lastRunDate=20261110`；该次 `applyDesktop()` 亦返回成功（桌面视觉是否更换仍需肉眼确认） |
-| 菜单栏管理工具 | Dimble（macOS 27 原生隐藏机制）会把本地自构建、无 Apple 签发链的 app 状态项移出菜单栏并标「不兼容」。已用「应用启动器 + 始终显示」绕过，配置后 Dimble 不再崩溃。见「菜单栏交互与 Dimble 启动器」一节 |
 | 不进 Dock | 按老板要求保持 `LSUIElement = true` + `.accessory`，不做 Dock 常驻。关闭主窗口后，从启动台/访达再次双击图标可唤出主窗口，或左键点菜单栏图标 |
 
 ## 网络通道与诊断
@@ -181,12 +165,11 @@ macOS 27 的隐藏机制在私有框架 `MenuBarClientCore`：Dimble 只提交�
 ## 仓库与备份（2026-11-10）
 
 - 私有仓库：`https://github.com/kingdocs/DailyWall`（账号 `kingdocs`，**private**），用途仅为工程与代码备份，不公开发布。
-- **入库范围**：Swift 源码、`build.sh` / `Info.plist`、自签脚本与公钥证书、M0 核验工具与记录、图标源资产（`AppIcon.iconset` / `AppIcon.icns`）、诊断分析文档。
+- **入库范围**：Swift 源码、`build.sh` / `Info.plist`、自签脚本与公钥证书、M0 核验工具与记录、图标源资产（`AppIcon.iconset` / `AppIcon.icns`）。
 - **未入库**（见 `.gitignore`）：
   - `signing/dailywall-selfsigned.p12`（私钥）与 `signing/.p12-password`（密码）—— 换机需自行补回，否则构建会报缺少密码；可用 `signing/create_selfsigned.sh` 重新生成（等于换身份）。
   - `build/`、`DailyWall.zip`、`*.app`（构建产物，可重建）。
   - `tools/` 下**历史**界面截图与 `preview_sample.jpg`（仅本机留存，不入库）；唯一例外是 `tools/main-window.png`，即本文档「主界面」一节用到的实机截图。Bing 每日壁纸为微软免费开放内容，此处仅作自用界面说明；仍不打包进发行物、不商用、不对外分发。
-  - `diagnostics/` 下 `.ips` 崩溃原文、证据包与日志摘录（含本机应用与窗口信息）；仓库只保留分析报告。
 - 仓库以 `DailyWall/` 为根，工作区上层的 `.workbuddy/`（会话与记忆文件）不在仓库内。
 - 克隆到新机后：`./build.sh` 即可构建。若要沿用同一张自签证书，先补回 p12 与密码文件；否则用 `DW_SIGN_MODE=adhoc ./build.sh` 走 ad-hoc 签名。
 
