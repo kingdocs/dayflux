@@ -25,7 +25,7 @@
 
 ## 已安装与交付
 
-- **已安装**：`~/Applications/DailyWall.app`（自签版，2026-11-10 10:34 覆盖并重启），可在访达「应用程序」或启动台直接双击。
+- **已安装**：`/Applications/DailyWall.app`（系统级「应用程序」目录，自签版，2026-11-10 13:20 从 `~/Applications` 迁移至此并重启；LaunchServices 已重新注册 `local.dailywall.selfuse` → 新路径），可在访达「应用程序」或启动台直接双击。
 - **可拷走的交付包**：`DailyWall.zip`（约 1.2 MB，含程序图标）。用 `ditto -c -k --sequesterRsrc --keepParent` 打包；已验证解压后 `codesign -v` 通过、`Authority=DailyWall Self-Use Code Signing`、无 `com.apple.quarantine`。
 - 自签版实机启动已验证：元数据 866 B + UHD 图 3,556,980 B 拉取成功、主窗口 430×560 正常、偏好与 `lastRunDate` 未变、Dimble 启动器入口（`open -b`）正常唤出主窗口。
 - 替换前的 ad-hoc 版本备份在 `/tmp/DailyWall-adhoc-backup.app`（临时目录，重启后可能被系统清理）；长期回退路径是源码 + `DW_SIGN_MODE=adhoc`。
