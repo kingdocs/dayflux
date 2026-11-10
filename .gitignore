@@ -1,0 +1,27 @@
+# 私钥与本机凭据：绝不入库
+signing/*.p12
+signing/.p12-password
+*.p12
+*.pfx
+*.key
+.env
+
+# 构建产物：可由 ./build.sh 重建
+build/
+DailyWall.zip
+*.app/
+
+# 界面证据截图与第三方壁纸示意素材：仅本机留存
+tools/*.png
+tools/*.jpg
+!tools/appicon_preview.png
+
+# 诊断原始证据：含本机应用与窗口信息，只保留分析报告
+diagnostics/**/*.ips
+diagnostics/**/*.zip
+diagnostics/**/dimble-log-excerpt.txt
+
+# 系统与编辑器
+.DS_Store
+*.swp
+*~
