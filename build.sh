@@ -4,6 +4,10 @@
 # 默认用 signing/ 下的自签证书；DW_SIGN_MODE=adhoc 可临时回退到 ad-hoc 签名。
 set -euo pipefail
 
+# 软件版本号：升级版本只改这里。构建序号按「当天第 N 次成功构建」自动累加，
+# 最终显示格式为 V1.1.2(20261110.2)，即 20261110 当天第二次编译。
+APP_VERSION="1.1.2"
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="$ROOT/build/DailyWall.app"
 CONTENTS="$APP/Contents"
@@ -16,15 +20,47 @@ SDK="$(xcrun --show-sdk-path 2>/dev/null || true)"
 [ -n "$SDK" ] || { echo "无法定位 macOS SDK"; exit 1; }
 echo "    SDK: $SDK"
 
+echo "==> 生成版本信息"
+TODAY="$(date +%Y%m%d)"
+COUNTER_FILE="$ROOT/.buildcounter"
+LAST_DATE=""
+LAST_SEQ=0
+if [ -f "$COUNTER_FILE" ]; then
+  read -r LAST_DATE LAST_SEQ < "$COUNTER_FILE" || true
+fi
+LAST_DATE="${LAST_DATE:-}"
+LAST_SEQ="${LAST_SEQ:-0}"
+case "$LAST_SEQ" in ''|*[!0-9]*) LAST_SEQ=0 ;; esac
+if [ "$LAST_DATE" = "$TODAY" ]; then
+  BUILD_SEQ=$((LAST_SEQ + 1))
+else
+  BUILD_SEQ=1
+fi
+BUILD_TAG="${TODAY}.${BUILD_SEQ}"
+BUILD_DISPLAY="V${APP_VERSION}(${BUILD_TAG})"
+GEN_DIR="$ROOT/build/generated"
+mkdir -p "$GEN_DIR"
+cat > "$GEN_DIR/BuildInfo.swift" <<EOF
+// 由 build.sh 自动生成，请勿手工编辑；build/ 不纳入版本控制。
+enum BuildInfo {
+    static let version = "${APP_VERSION}"
+    static let buildTag = "${BUILD_TAG}"
+    static let display = "V${APP_VERSION}(${BUILD_TAG})"
+}
+EOF
+echo "    ${BUILD_DISPLAY}"
+
 echo "==> 清理上一次的 app bundle（仅 build/DailyWall.app）"
 rm -rf "$APP"
 mkdir -p "$CONTENTS/MacOS"
 
 echo "==> 编译 Swift 源码"
-swiftc -O -swift-version 5 "$ROOT"/Sources/*.swift -o "$BIN"
+swiftc -O -swift-version 5 "$ROOT"/Sources/*.swift "$GEN_DIR/BuildInfo.swift" -o "$BIN"
 
 echo "==> 组装 bundle"
 cp "$ROOT/Info.plist" "$CONTENTS/Info.plist"
+plutil -replace CFBundleShortVersionString -string "$APP_VERSION" "$CONTENTS/Info.plist"
+plutil -replace CFBundleVersion -string "$BUILD_TAG" "$CONTENTS/Info.plist"
 printf 'APPL????' > "$CONTENTS/PkgInfo"
 if [ -f "$ROOT/AppIcon.icns" ]; then
   mkdir -p "$CONTENTS/Resources"
@@ -41,6 +77,10 @@ else
   "$ROOT/signing/sign_app.sh" "$APP"
 fi
 
+# 只有完整构建成功才累加序号，失败的下次仍用同一个号。
+printf '%s %s\n' "$TODAY" "$BUILD_SEQ" > "$COUNTER_FILE"
+
 echo "==> 完成"
 echo "    $APP"
+echo "    $BUILD_DISPLAY"
 echo "    运行: open \"$APP\""

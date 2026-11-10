@@ -10,6 +10,8 @@ signing/.p12-password
 build/
 DailyWall.zip
 *.app/
+# 本机构建序号（当天第几次成功编译），换机重新从 1 开始
+.buildcounter
 
 # 界面证据截图与第三方壁纸示意素材：仅本机留存
 tools/*.png

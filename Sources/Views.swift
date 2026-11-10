@@ -228,6 +228,16 @@ struct ContentView: View {
                 }
             }
             .padding(.top, 6)
+
+            // 页脚：软件版本 + 构建日期与当天编译序号（由 build.sh 生成）。
+            HStack {
+                Spacer()
+                Text(BuildInfo.display)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.secondary.opacity(0.7))
+                    .accessibilityLabel("软件版本 \(BuildInfo.display)")
+            }
+            .padding(.top, 10)
         }
         .padding(16)
         .frame(width: 430)

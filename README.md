@@ -1,4 +1,4 @@
-# DailyWall（自用版 0.1.0）
+# DailyWall（自用版 1.1.2）
 
 **完全自用，不公开发布。** macOS 菜单栏应用，获取 Bing 每日壁纸、保存到自选目录、设为桌面。
 
@@ -14,6 +14,12 @@
 
   脚本用 `swiftc` 编译 `Sources/*.swift`，组装 `.app`，`plutil -lint` 校验，最后用 `signing/` 下的自签证书签名并做严格校验。产物不带 `com.apple.quarantine`。需要临时回退到 ad-hoc 签名时：`DW_SIGN_MODE=adhoc ./build.sh`。
 - 产物位置：`build/DailyWall.app`。重复构建只覆盖该 bundle，不触碰其它目录。
+
+## 版本号与构建序号
+
+- 主界面右下角显示版本与构建信息，例如 `V1.1.2(20261110.2)` 表示：软件版本 1.1.2，2026-11-10 当天第 2 次成功编译。
+- 版本号只在 `build.sh` 顶部 `APP_VERSION` 一处维护；每次 `./build.sh` **成功**后按当天日期自动累加序号，跨天归 1，构建失败不计数（下次仍用同一号）。
+- 序号存本机 `.buildcounter`（不入库，换机从 1 开始）；`build/generated/BuildInfo.swift` 由脚本生成，界面页脚与 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 使用同一份值。
 
 ## 代码签名（2026-11-10 起启用自签）
 
