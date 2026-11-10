@@ -37,7 +37,9 @@ else
   BUILD_SEQ=1
 fi
 BUILD_TAG="${TODAY}.${BUILD_SEQ}"
-BUILD_DISPLAY="V${APP_VERSION}(${BUILD_TAG})"
+# 作者署名：跟在版本号后面一起显示。
+AUTHOR_TAG='@Micheas'
+BUILD_DISPLAY="V${APP_VERSION}(${BUILD_TAG})${AUTHOR_TAG}"
 GEN_DIR="$ROOT/build/generated"
 mkdir -p "$GEN_DIR"
 cat > "$GEN_DIR/BuildInfo.swift" <<EOF
@@ -45,7 +47,8 @@ cat > "$GEN_DIR/BuildInfo.swift" <<EOF
 enum BuildInfo {
     static let version = "${APP_VERSION}"
     static let buildTag = "${BUILD_TAG}"
-    static let display = "V${APP_VERSION}(${BUILD_TAG})"
+    static let author = "${AUTHOR_TAG}"
+    static let display = "V${APP_VERSION}(${BUILD_TAG})${AUTHOR_TAG}"
 }
 EOF
 echo "    ${BUILD_DISPLAY}"
