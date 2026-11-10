@@ -24,6 +24,8 @@ final class AppState: ObservableObject {
     @Published var showingSettings = false
     @Published var needsDirectorySetup = false
     @Published var launchAtLogin = false
+    /// 键盘清洁模式：开启后全屏蒙层拦截键盘输入，方便擦拭键盘；再点鼠标解除。
+    @Published var cleaningMode = false
 
     let settings = WallpaperSettings.shared
 
@@ -66,6 +68,8 @@ final class AppState: ObservableObject {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
             wakeObserver = nil
         }
+        // 退出前若仍处于清洁模式，复位以便 AppDelegate 清理蒙层与事件监听。
+        if cleaningMode { cleaningMode = false }
     }
 
     // MARK: - 今日数据
@@ -240,6 +244,13 @@ final class AppState: ObservableObject {
             launchAtLogin = false
             setMessage("登录启动注册失败：\(describe(error))。不影响下载与换桌面。", isError: true)
         }
+    }
+
+    // MARK: - 键盘清洁
+
+    /// 切换键盘清洁模式：开启→全屏禁用键盘；再次点击（鼠标）→解除。
+    func toggleCleaner() {
+        cleaningMode.toggle()
     }
 
     // MARK: - 调度

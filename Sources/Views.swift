@@ -59,6 +59,75 @@ struct ActionButton: View {
     }
 }
 
+/// 键盘清洁按钮：常态为普通工具按钮；清洁模式开启时整键变红（醒目），
+/// 提示当前键盘已被禁用。再次用鼠标点击即解除。
+struct CleanKeyboardButton: View {
+    @ObservedObject var state: AppState
+    private var active: Bool { state.cleaningMode }
+
+    var body: some View {
+        Button {
+            state.toggleCleaner()
+        } label: {
+            VStack(spacing: 5) {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 15))
+                    .frame(width: 16, height: 16)
+                Text(active ? "清洁中…" : "清洁键盘")
+                    .font(.system(size: 12))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(RoundedRectangle(cornerRadius: 8).fill(
+                active ? Color(nsColor: NSColor(srgbRed: 0.86, green: 0.16, blue: 0.16, alpha: 1))
+                       : surfaceColor))
+            .foregroundColor(active ? .white : .primary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(active ? "键盘清洁中，点击鼠标结束" : "清洁键盘：点击禁用键盘")
+    }
+}
+
+/// 键盘清洁全屏蒙层：覆盖所有屏幕并拦截键盘输入，鼠标点击任意处即解除。
+struct CleanerOverlay: View {
+    @ObservedObject var state: AppState
+
+    var body: some View {
+        ZStack {
+            Color(nsColor: NSColor(srgbRed: 0.07, green: 0.07, blue: 0.09, alpha: 0.72))
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 48, weight: .regular))
+                    .foregroundColor(.white)
+                Text("键盘清洁中")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.white)
+                Text("键盘已禁用，可放心擦拭")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.85))
+
+                HStack(spacing: 6) {
+                    Image(systemName: "computermouse")
+                        .font(.system(size: 13))
+                    Text("清洁完成后，点击任意位置结束")
+                        .font(.system(size: 13))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 9)
+                .background(Capsule().fill(
+                    Color(nsColor: NSColor(srgbRed: 0.86, green: 0.16, blue: 0.16, alpha: 1))))
+            }
+        }
+        .contentShape(Rectangle())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onTapGesture { state.toggleCleaner() }
+    }
+}
+
 struct SettingRow: View {
     let title: String
     let value: String
@@ -145,6 +214,7 @@ struct ContentView: View {
                 ActionButton(title: "打开目录", systemImage: "folder") {
                     state.revealDirectory()
                 }
+                CleanKeyboardButton(state: state)
             }
             .padding(.top, 14)
 

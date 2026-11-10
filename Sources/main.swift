@@ -38,6 +38,13 @@ private final class StatusBarAction: NSObject {
     }
 }
 
+/// 无边框全屏蒙层窗口：默认 borderless 窗口不能成为 key 窗口，
+/// 覆盖 canBecomeKey/Main 后才能接收键盘事件并被本地事件监视器拦截。
+private final class CleanerWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 /// NSApplication.delegate 是弱/assign 引用，必须显式强持有，
 /// 否则 -O 构建下局部变量可能在最后一次使用后释放，状态项随之消失。
 @MainActor
@@ -54,6 +61,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var window: NSWindow!
     private var menuActions: [MenuAction] = []
     private let state = AppState()
+    // 键盘清洁：全屏蒙层窗口与本地键盘事件监视器。
+    private var cleanerWindows: [NSWindow] = []
+    private var keyMonitor: Any?
+    private var flagMonitor: Any?
+    private var cleanerCancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dwStatusLog("启动参数 \(CommandLine.arguments)")
@@ -68,6 +80,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             }
         showWindow()
         state.start()
+        // 键盘清洁：监听状态开关，自动建立/拆除全屏蒙层与键盘拦截。
+        cleanerCancellable = state.$cleaningMode
+            .sink { [weak self] active in
+                Task { @MainActor in
+                    if active { self?.startCleaning() } else { self?.stopCleaning() }
+                }
+            }
         // 调试入口：open build/DailyWall.app --args --show-settings
         // 延迟到界面完成首次渲染后再触发 sheet，避免在 didFinishLaunching 里被吞掉。
         if CommandLine.arguments.contains("--show-settings") {
@@ -78,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     func applicationWillTerminate(_ notification: Notification) {
         state.stop()
+        stopCleaning()
         visibilityCancellable?.cancel()
     }
 
@@ -156,6 +176,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         state.notifyWindowVisibility(false)
         state.releasePreviewResources()
         dwStatusLog("主窗口关闭 → 释放预览资源（窗口重开时从磁盘缓存恢复）")
+    }
+
+    // MARK: - 键盘清洁
+
+    /// 开启清洁：在所有屏幕铺满无边框蒙层（screenSaver 层级，覆盖全空间），
+    /// 并安装本地键盘事件监视器吞掉按键，避免擦拭时误触。
+    private func startCleaning() {
+        guard cleanerWindows.isEmpty else { return }
+        for screen in NSScreen.screens {
+            let win = CleanerWindow(contentRect: screen.frame,
+                                    styleMask: .borderless,
+                                    backing: .buffered, defer: false)
+            win.level = .screenSaver
+            win.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .fullScreenAuxiliary]
+            win.backgroundColor = .clear
+            win.isOpaque = false
+            win.hasShadow = false
+            win.contentViewController = NSHostingController(rootView: CleanerOverlay(state: state))
+            win.ignoresMouseEvents = false
+            win.makeKeyAndOrderFront(nil)
+            cleanerWindows.append(win)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        // 返回 nil 即消费事件：键盘输入被吞掉，蒙层上的鼠标点击不受影响。
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { _ in nil }
+        flagMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { _ in nil }
+        dwStatusLog("键盘清洁模式开启（蒙层 \(cleanerWindows.count) 屏 + 键盘拦截）")
+    }
+
+    /// 关闭清洁：移除监视器并撤掉蒙层，恢复键盘正常输入。
+    private func stopCleaning() {
+        let hadActive = keyMonitor != nil || !cleanerWindows.isEmpty
+        if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+        if let m = flagMonitor { NSEvent.removeMonitor(m); flagMonitor = nil }
+        for win in cleanerWindows {
+            win.orderOut(nil)
+            win.contentViewController = nil
+        }
+        cleanerWindows.removeAll()
+        if hadActive { dwStatusLog("键盘清洁模式关闭（已恢复键盘输入）") }
     }
 
     // MARK: - 菜单栏
