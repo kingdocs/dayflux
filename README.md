@@ -2,6 +2,12 @@
 
 **完全自用，不公开发布。** macOS 菜单栏应用，获取 Bing 每日壁纸、保存到自选目录、设为桌面。
 
+## 主界面
+
+![DailyWall 主界面（2026-11-10 实机截图）](tools/main-window.png)
+
+> 预览区为当日 Bing 壁纸实图；四个按钮依次为 设置桌面 / 下载壁纸 / 打开目录 / 清洁键盘。窗口右下角页脚是版本号、构建日期与当天编译序号、作者署名。此截图仅用于本仓库的界面说明，不对外分发。
+
 ## 系统要求与构建
 
 - 实测环境：macOS 27.2 (26B123)、Apple Silicon、Xcode **Command Line Tools**（无需 Xcode.app、无需 Apple Developer 账号）。
@@ -160,7 +166,7 @@ macOS 27 的隐藏机制在私有框架 `MenuBarClientCore`：Dimble 只提交�
   env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy /tmp/dw_netprobe
   ```
 
-- 界面截图：`tools/preview_final.png`（主窗口，真实 Bing 当日图）、`tools/settings_v3.png`（新版设置面板：顶部完成按钮 + 问号图标，无常驻小字）、`tools/settings_help_popover.png`（点击问号弹出的说明气泡）、`tools/settings_menubar_toggle.png`（含「菜单栏」分组的旧版设置面板）。
+- 界面截图：**`tools/main-window.png`（当前主界面，含版本页脚与「清洁键盘」按钮，已入库供本文档展示）**、`tools/preview_final.png`（早期主窗口，真实 Bing 当日图）、`tools/settings_v3.png`（新版设置面板：顶部完成按钮 + 问号图标，无常驻小字）、`tools/settings_help_popover.png`（点击问号弹出的说明气泡）、`tools/settings_menubar_toggle.png`（含「菜单栏」分组的旧版设置面板）。
 - 调试入口：`open build/DailyWall.app --args --show-settings`。注意在部分启动方式下 `open` 不把参数传给进程（2026-11-10 实测发生过，日志里的启动参数可核对），此时从主窗口任意一行设置点进设置面板即可。
 - 设置面板用 `HelpButton`（`questionmark.circle` + `.popover`）承载分组说明；纯 Command Line Tools 下 SwiftUI 的 `@State` 宏插件不可用，弹窗状态改用 `ObservableObject` + `@StateObject`。外层 `ScrollView` 只在内容超高时滚动，顶部完成按钮始终固定。
 
@@ -179,7 +185,7 @@ macOS 27 的隐藏机制在私有框架 `MenuBarClientCore`：Dimble 只提交�
 - **未入库**（见 `.gitignore`）：
   - `signing/dailywall-selfsigned.p12`（私钥）与 `signing/.p12-password`（密码）—— 换机需自行补回，否则构建会报缺少密码；可用 `signing/create_selfsigned.sh` 重新生成（等于换身份）。
   - `build/`、`DailyWall.zip`、`*.app`（构建产物，可重建）。
-  - `tools/` 下界面截图与 `preview_sample.jpg`（含第三方 Bing 壁纸，仅本机留存）；本文档引用的这些截图在仓库里不存在。
+  - `tools/` 下**历史**界面截图与 `preview_sample.jpg`（仅本机留存，不入库）；唯一例外是 `tools/main-window.png`，即本文档「主界面」一节用到的实机截图。Bing 每日壁纸为微软免费开放内容，此处仅作自用界面说明；仍不打包进发行物、不商用、不对外分发。
   - `diagnostics/` 下 `.ips` 崩溃原文、证据包与日志摘录（含本机应用与窗口信息）；仓库只保留分析报告。
 - 仓库以 `DailyWall/` 为根，工作区上层的 `.workbuddy/`（会话与记忆文件）不在仓库内。
 - 克隆到新机后：`./build.sh` 即可构建。若要沿用同一张自签证书，先补回 p12 与密码文件；否则用 `DW_SIGN_MODE=adhoc ./build.sh` 走 ad-hoc 签名。
