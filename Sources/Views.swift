@@ -73,7 +73,7 @@ struct CleanKeyboardButton: View {
                 Image(systemName: "keyboard")
                     .font(.system(size: 15))
                     .frame(width: 16, height: 16)
-                Text(active ? "清洁中…" : "清洁键盘")
+                Text(active ? "结束清洁" : "清洁键盘")
                     .font(.system(size: 12))
             }
             .frame(maxWidth: .infinity)
@@ -85,46 +85,7 @@ struct CleanKeyboardButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(active ? "键盘清洁中，点击鼠标结束" : "清洁键盘：点击禁用键盘")
-    }
-}
-
-/// 键盘清洁全屏蒙层：覆盖所有屏幕并拦截键盘输入，鼠标点击任意处即解除。
-struct CleanerOverlay: View {
-    @ObservedObject var state: AppState
-
-    var body: some View {
-        ZStack {
-            Color(nsColor: NSColor(srgbRed: 0.07, green: 0.07, blue: 0.09, alpha: 0.72))
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                Image(systemName: "keyboard")
-                    .font(.system(size: 48, weight: .regular))
-                    .foregroundColor(.white)
-                Text("键盘清洁中")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.white)
-                Text("键盘已禁用，可放心擦拭")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.85))
-
-                HStack(spacing: 6) {
-                    Image(systemName: "computermouse")
-                        .font(.system(size: 13))
-                    Text("清洁完成后，点击任意位置结束")
-                        .font(.system(size: 13))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(Capsule().fill(
-                    Color(nsColor: NSColor(srgbRed: 0.86, green: 0.16, blue: 0.16, alpha: 1))))
-            }
-        }
-        .contentShape(Rectangle())
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onTapGesture { state.toggleCleaner() }
+        .accessibilityLabel(active ? "键盘已禁用，点击结束清洁" : "清洁键盘：点击全局禁用键盘")
     }
 }
 
