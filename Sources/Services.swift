@@ -361,17 +361,38 @@ final class DownloadService {
 final class DesktopService {
     static let shared = DesktopService()
 
-    /// 自用版口径：应用到所有已连接显示器。规格 4.3 未定义目标显示器，此处明确。
-    func apply(_ url: URL) throws {
-        let screens = NSScreen.screens
-        guard !screens.isEmpty else { throw DWError.desktop("未检测到显示器") }
-        var succeeded = 0
-        for screen in screens {
-            if (try? NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:])) != nil {
-                succeeded += 1
+    /// 自用版口径：应用到所有已连接显示器，并回读校验主屏确实生效。
+    /// 唤醒 / 登录瞬间桌面服务未就绪时，`setDesktopImageURL` 可能不抛错却不落地；
+    /// 若不校验就会误判成功并写下 lastRunDate，导致当天再不重试。
+    func apply(_ url: URL) async throws {
+        let expected = url.lastPathComponent
+        var detail = ""
+        for attempt in 1...3 {
+            let screens = NSScreen.screens
+            guard !screens.isEmpty else { throw DWError.desktop("未检测到显示器") }
+
+            var accepted = 0
+            for screen in screens {
+                do {
+                    try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:])
+                    accepted += 1
+                } catch {
+                    DWLog.schedule("桌面设置被拒: \(error.localizedDescription)")
+                }
             }
+
+            // 给 Dock/WindowServer 一点落盘时间，再回读主屏。
+            try? await Task.sleep(nanoseconds: UInt64(attempt) * 400_000_000)
+            let primary = NSScreen.main ?? screens[0]
+            let current = NSWorkspace.shared.desktopImageURL(for: primary)
+            let matched = current?.lastPathComponent == expected
+                || current?.standardizedFileURL.path == url.standardizedFileURL.path
+            detail = "accepted=\(accepted)/\(screens.count) 主屏回读=\(current?.lastPathComponent ?? "nil")"
+            DWLog.schedule("桌面校验 第\(attempt)次 \(matched ? "已生效" : "未生效") \(detail)")
+
+            if matched { return }
         }
-        guard succeeded > 0 else { throw DWError.desktop("系统拒绝了壁纸设置请求") }
+        throw DWError.desktop("壁纸设置后未生效（已重试 3 次：\(detail)）")
     }
 }
 

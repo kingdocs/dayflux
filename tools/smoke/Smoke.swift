@@ -164,6 +164,35 @@ struct Smoke {
               && nextOld.timeIntervalSince(at(10, 9, 0)) <= 2,
               "\(String(format: "%.1f", nextOld.timeIntervalSince(at(10, 9, 0))))s")
 
+        // 启动/唤醒稳定期：只推迟「立即补跑」，不得改动远期触发点。
+        let grace = at(10, 9, 0).addingTimeInterval(15)
+        let nextGrace = SchedulePolicy.nextFire(now: at(10, 9, 0), calendar: cal,
+                                                hour: 8, minute: 30,
+                                                lastRunDate: nil, lastAttempt: nil,
+                                                notBefore: grace)
+        check("唤醒稳定期 → 补跑推迟到稳定期结束",
+              abs(nextGrace.timeIntervalSince(grace)) < 1,
+              "\(nextGrace)")
+
+        let nextGraceDone = SchedulePolicy.nextFire(now: at(10, 9, 0), calendar: cal,
+                                                    hour: 8, minute: 30,
+                                                    lastRunDate: "20261110", lastAttempt: nil,
+                                                    notBefore: grace)
+        check("今天已完成 → 稳定期不推迟明天 08:30",
+              cal.component(.day, from: nextGraceDone) == 11
+              && cal.component(.hour, from: nextGraceDone) == 8
+              && cal.component(.minute, from: nextGraceDone) == 30,
+              "\(nextGraceDone)")
+
+        let nextGraceBefore = SchedulePolicy.nextFire(now: at(10, 7, 0), calendar: cal,
+                                                      hour: 8, minute: 30,
+                                                      lastRunDate: nil, lastAttempt: nil,
+                                                      notBefore: at(10, 7, 0).addingTimeInterval(15))
+        check("未到设定时间 → 稳定期不推迟今天 08:30",
+              cal.component(.hour, from: nextGraceBefore) == 8
+              && cal.component(.minute, from: nextGraceBefore) == 30,
+              "\(nextGraceBefore)")
+
         print("\n结果: \(failures == 0 ? "全部通过" : "\(failures) 项失败")")
         exit(failures == 0 ? 0 : 1)
     }

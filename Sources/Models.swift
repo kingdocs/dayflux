@@ -158,6 +158,11 @@ enum SchedulePolicy {
     /// 任务失败后的重试冷却，避免每分钟重复打接口。
     static let retryInterval: TimeInterval = 5 * 60
 
+    /// 冷启动 / 唤醒瞬间的稳定期：此时 WindowServer、Dock 与桌面 Space 可能尚未就绪，
+    /// `setDesktopImageURL` 会「不抛错但不生效」。补跑统一延后到稳定期之后。
+    static let startupGrace: TimeInterval = 10
+    static let wakeGrace: TimeInterval = 15
+
     /// 是否应执行当天的自动任务。
     /// - `lastRunDate` 只在核心链路全部成功后写入；失败保持为空，当天继续重试。
     /// - `lastAttempt` 记录最近一次尝试（含失败），用于冷却。
@@ -187,19 +192,23 @@ enum SchedulePolicy {
                          hour: Int,
                          minute: Int,
                          lastRunDate: String?,
-                         lastAttempt: Date?) -> Date {
+                         lastAttempt: Date?,
+                         notBefore: Date? = nil) -> Date {
         let today = DWFormat.todayString(now)
         let target = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now)!
+        let fire: Date
         if lastRunDate == today {
-            return calendar.date(byAdding: .day, value: 1, to: target)!
+            fire = calendar.date(byAdding: .day, value: 1, to: target)!
+        } else if now < target {
+            fire = target
+        } else if let last = lastAttempt, now.timeIntervalSince(last) < retryInterval {
+            fire = last.addingTimeInterval(retryInterval)
+        } else {
+            fire = now.addingTimeInterval(1)
         }
-        if now < target {
-            return target
-        }
-        if let last = lastAttempt, now.timeIntervalSince(last) < retryInterval {
-            return last.addingTimeInterval(retryInterval)
-        }
-        return now.addingTimeInterval(1)
+        // 只推迟「立即补跑」这类近期触发点；今天的设定时刻、明天同一时刻天然在稳定期之后。
+        if let notBefore, fire < notBefore { return notBefore }
+        return fire
     }
 }
 

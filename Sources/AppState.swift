@@ -36,6 +36,8 @@ final class AppState: ObservableObject {
     private var lastScheduledAttempt: Date?
     private var timer: Timer?
     private var wakeObserver: NSObjectProtocol?
+    /// 冷启动 / 唤醒后的稳定期截止点：此前不触发补跑，避免桌面服务未就绪时误判成功。
+    private var notBefore: Date?
     /// 主窗口当前是否可见，由 AppDelegate 通知。用于决定自动任务完成后是否保留预览内存。
     private var mainWindowVisible = false
 
@@ -46,18 +48,23 @@ final class AppState: ObservableObject {
         launchAtLogin = LaunchAtLoginService.shared.isEnabled()
         needsDirectorySetup = (settings.directoryPath == nil)
 
-        // 单次定时到下个执行点，取代每分钟轮询；睡眠唤醒后由通知重算（自带补偿）。
+        // 单次定时到下个执行点，取代每分钟轮询；启动/唤醒后统一由调度器补偿，
+        // 且都带一段稳定期，避开桌面服务尚未就绪的窗口。
+        notBefore = Date().addingTimeInterval(SchedulePolicy.startupGrace)
         scheduleNext()
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.scheduleNext() }
+            Task { @MainActor in
+                self?.notBefore = Date().addingTimeInterval(SchedulePolicy.wakeGrace)
+                self?.scheduleNext()
+            }
         }
 
         Task {
             await refresh()
-            // 启动后按当前日期执行一次补偿，不追溯多日（规格 4.3）。
-            tick()
+            // 启动后按当前日期补偿一次，不追溯多日（规格 4.3）；统一走调度器。
+            scheduleNext()
         }
     }
 
@@ -184,7 +191,7 @@ final class AppState: ObservableObject {
                 }
                 _ = try DownloadService.shared.save(image, wallpaper: wallpaper, overwrite: false)
             }
-            try DesktopService.shared.apply(target)
+            try await DesktopService.shared.apply(target)
             setMessage("已设置桌面（所有已连接显示器）", isError: false)
             NotificationService.shared.send(title: "DailyWall", body: "桌面壁纸已更新")
             return true
@@ -286,7 +293,8 @@ final class AppState: ObservableObject {
             if succeeded {
                 settings.lastRunDate = today
                 lastScheduledAttempt = nil
-                DWLog.schedule("任务成功 → 写入 lastRunDate=\(today)")
+                notBefore = nil
+                DWLog.schedule("任务成功（桌面已回读确认）→ 写入 lastRunDate=\(today)")
             } else {
                 DWLog.schedule("任务失败 → 不写 lastRunDate，\(Int(SchedulePolicy.retryInterval / 60)) 分钟后重试")
                 setMessage("自动任务未完成，将在 5 分钟后重试；已有文件不受影响。", isError: true)
@@ -302,7 +310,8 @@ final class AppState: ObservableObject {
             hour: settings.dailyHour,
             minute: settings.dailyMinute,
             lastRunDate: settings.lastRunDate,
-            lastAttempt: lastScheduledAttempt
+            lastAttempt: lastScheduledAttempt,
+            notBefore: notBefore
         )
         let interval = max(0.5, next.timeIntervalSinceNow)
         timer?.invalidate()
