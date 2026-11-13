@@ -12,7 +12,7 @@ struct Smoke {
             if !condition { failures += 1 }
         }
 
-        print("=== DailyWall M1 冒烟测试（无 GUI）===\n")
+        print("=== Dayflux M1 冒烟测试（无 GUI）===\n")
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("dw_smoke_out", isDirectory: true)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DailyWall M0 接口核验脚本。
+"""Dayflux M0 接口核验脚本。
 
 对应《DailyWall 软件开发需求规格说明书》附录 A 第 1/2/3 项与 7.2 节。
 
@@ -91,7 +91,7 @@ def main():
     args = ap.parse_args()
 
     now = datetime.now(BEIJING)
-    print("=== DailyWall M0 接口核验 ===")
+    print("=== Dayflux M0 接口核验 ===")
     print(f"验证时间: {now.isoformat()}  出口: 本机网络  超时: {args.timeout}s")
     print("性质: 单次快照，不构成稳定契约\n")
 

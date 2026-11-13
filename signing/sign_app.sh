@@ -1,12 +1,12 @@
 #!/bin/bash
-# 用 DailyWall 自签代码签名证书给指定 .app 签名。
+# 用 Dayflux 自签代码签名证书（证书 CN 沿用旧名，换名即换身份）给指定 .app 签名。
 # 特点：全程使用临时钥匙串，签名后自动删除，不改动登录钥匙串 / 系统信任设置。
-# 用法：./sign_app.sh /path/to/DailyWall.app
+# 用法：./sign_app.sh /path/to/Dayflux.app
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="${1:-}"
-[ -n "$APP" ] || { echo "用法: $0 <DailyWall.app 路径>"; exit 2; }
+[ -n "$APP" ] || { echo "用法: $0 <Dayflux.app 路径>"; exit 2; }
 [ -d "$APP" ] || { echo "找不到 app: $APP"; exit 1; }
 
 P12="$ROOT/dailywall-selfsigned.p12"
@@ -22,7 +22,7 @@ if [ -z "$PASS" ]; then
 fi
 CERT="DailyWall Self-Use Code Signing"
 TMP="$(mktemp -d /tmp/dw-sign.XXXXXX)"
-KC="$TMP/DailyWall.keychain-db"
+KC="$TMP/Dayflux.keychain-db"
 
 cleanup() {
   security delete-keychain "$KC" 2>/dev/null || true

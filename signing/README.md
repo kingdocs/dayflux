@@ -1,4 +1,4 @@
-# DailyWall 自签代码签名证书（已启用）
+# Dayflux 自签代码签名证书（已启用）
 
 生成：2026-11-10 10:25｜**启用：2026-11-10 10:34（老板确认）**｜状态：`build.sh` 默认改用本证书签名，安装版与交付 zip 均已重签并实机复验。全程未导入登录钥匙串、未改动系统信任设置。
 
@@ -55,7 +55,7 @@
 1. `build.sh` 的默认签名分支改为调用 `sign_app.sh`，保留 `DW_SIGN_MODE=adhoc` 回退开关。
 2. 完整重建 → 冒烟 20/20 → 连续重建两次确认 DR 与 cdhash 不变。
 3. 温和退出旧进程（PID 57333）→ 旧安装版移到 `/tmp/DailyWall-adhoc-backup.app` → `ditto` 安装自签版 → `open` 启动。
-4. 重打包 `DailyWall.zip`，解压回验签名、图标、无 quarantine。
+4. 重打包 `Dayflux.zip`，解压回验签名、图标、无 quarantine。
 
 ## 七、启用后的实机验证（10:34—10:36）
 
@@ -67,7 +67,7 @@
 | 实机启动 | 新进程 64112；元数据 866 B + UHD 3,556,980 B 成功；主窗口 430×560 在屏 |
 | 偏好设置 | `autoDownload/autoChange=1`、`lastRunDate=20261110`、`showMenuBarIcon=0`，一项未改 |
 | 重新打开入口 | `open -b local.dailywall.selfuse` → 日志「收到重新打开请求 → 显示主窗口」 |
-| 交付包 | `DailyWall.zip` 1.2 MB，解压回验签名、图标、无 quarantine 均通过 |
+| 交付包 | `Dayflux.zip` 1.2 MB，解压回验签名、图标、无 quarantine 均通过 |
 
 **遗留边界（未变）**：`TeamIdentifier=not set`、`spctl -a` 仍 rejected、无 Apple 签发链、无法公证。属签名机制本身的限制，本机无解。
 

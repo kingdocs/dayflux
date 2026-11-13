@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 
-// DailyWall App 图标：黄昏湖景 + 日轮 + 倒影，纯矢量绘制，输出标准 iconset。
+// Dayflux App 图标：黄昏湖景 + 日轮 + 倒影，纯矢量绘制，输出标准 iconset。
 // 用法：cp tools/make_icons.swift /tmp/dw_iconbuild/main.swift
 //       swiftc -O -swift-version 5 /tmp/dw_iconbuild/main.swift -o /tmp/make_icons
 //       /tmp/make_icons <输出目录>

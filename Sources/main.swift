@@ -90,7 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                     if active { self?.startCleaning() } else { self?.stopCleaning() }
                 }
             }
-        // 调试入口：open build/DailyWall.app --args --show-settings
+        // 调试入口：open build/Dayflux.app --args --show-settings
         // 延迟到界面完成首次渲染后再触发 sheet，避免在 didFinishLaunching 里被吞掉。
         if CommandLine.arguments.contains("--show-settings") {
             dwStatusLog("调试参数生效：--show-settings")
@@ -110,11 +110,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         false
     }
 
-    /// 从 Dimble 启动器 / 启动台 / 访达再次打开时，直接显示主窗口，
+    /// 从启动台 / 访达再次打开时，直接显示主窗口，
     /// 不需要再从右键菜单里选「打开主窗口」。
     func applicationShouldHandleReopen(_ sender: NSApplication,
                                        hasVisibleWindows flag: Bool) -> Bool {
-        dwStatusLog("收到重新打开请求（启动器/访达双击）→ 显示主窗口")
+        dwStatusLog("收到重新打开请求（启动台/访达双击）→ 显示主窗口")
         showWindow()
         return true
     }
@@ -130,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             backing: .buffered, defer: false
         )
         window.contentViewController = hosting
-        window.title = "DailyWall"
+        window.title = "Dayflux"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
@@ -149,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
 
     private func showWindow() {
         dwStatusLog("showWindow 调出主窗口")
-        // 懒创建：启动时不建窗口，首次点图标（Dimble/菜单栏）时才创建。
+        // 懒创建：启动时不建窗口，首次点菜单栏图标时才创建。
         if window == nil { buildWindow() }
         state.notifyWindowVisibility(true)
         state.ensurePreviewLoadedIfNeeded()
@@ -200,7 +200,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         guard AXIsProcessTrusted() else {
             promptAccessibility()
             state.cleaningMode = false
-            state.setMessage("全局禁用键盘需要「辅助功能」权限：请到 系统设置 → 隐私与安全性 → 辅助功能，勾选 DailyWall，然后再点一次「清洁键盘」。", isError: true)
+            state.setMessage("全局禁用键盘需要「辅助功能」权限：请到 系统设置 → 隐私与安全性 → 辅助功能，勾选 Dayflux，然后再点一次「清洁键盘」。", isError: true)
             return
         }
 
@@ -230,7 +230,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                                           callback: callback,
                                           userInfo: nil) else {
             state.cleaningMode = false
-            state.setMessage("键盘拦截创建失败：请在「辅助功能」中授权 DailyWall，退出重开应用后再试。", isError: true)
+            state.setMessage("键盘拦截创建失败：请在「辅助功能」中授权 Dayflux，退出重开应用后再试。", isError: true)
             return
         }
 
@@ -304,7 +304,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         }
         button.image = makeMenuBarIcon()
         button.imagePosition = .imageOnly
-        button.toolTip = "DailyWall · 左键打开主窗口，右键打开菜单"
+        button.toolTip = "Dayflux · 左键打开主窗口，右键打开菜单"
 
         let menu = NSMenu()
         menu.delegate = self
@@ -329,7 +329,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             self?.state.showingSettings = true
         }
         menu.addItem(.separator())
-        add(menu, "退出 DailyWall") { NSApp.terminate(nil) }
+        add(menu, "退出 Dayflux") { NSApp.terminate(nil) }
 
         // 不设置 statusItem.menu，由按钮 action 区分左右键。
         let action = StatusBarAction { [weak self] target, wantsMenu in

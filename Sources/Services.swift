@@ -298,7 +298,7 @@ final class StorageService {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = "选择"
-        panel.message = "选择 DailyWall 保存壁纸的目录（应用不会删除其中的文件）"
+        panel.message = "选择 Dayflux 保存壁纸的目录（应用不会删除其中的文件）"
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
         WallpaperSettings.shared.directoryPath = url.path
         return url

@@ -130,7 +130,7 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("DailyWall")
+                Text("Dayflux")
                     .font(.system(size: 16, weight: .semibold))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
@@ -353,10 +353,11 @@ struct SettingsView: View {
 
             Divider()
 
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 12) {
+            // 双栏平铺：6 个分组左右各 3 个，去掉滚动条，一屏完整显示。
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
                     section("菜单栏",
-                            help: "左键点菜单栏图标打开主窗口，右键打开菜单。关闭图标后，可用 Dimble 启动器或在访达双击应用打开。") {
+                            help: "左键点菜单栏图标打开主窗口，右键打开菜单。关闭图标后，可在访达双击应用或从启动台打开。") {
                         Toggle("显示菜单栏图标", isOn: $settings.showMenuBarIcon)
                     }
 
@@ -384,7 +385,10 @@ struct SettingsView: View {
                             Button("更改…") { state.changeDirectory() }
                         }
                     }
+                }
+                .frame(maxWidth: .infinity, alignment: .top)
 
+                VStack(alignment: .leading, spacing: 10) {
                     section("自动化",
                             help: "应用常驻时每分钟检查一次，到点自动执行；关机或睡眠后恢复时按当天补一次，不追溯多日。若任务失败，5 分钟后自动重试，直到当天成功。") {
                         Toggle("每天定时更换桌面", isOn: $settings.autoChange)
@@ -429,12 +433,12 @@ struct SettingsView: View {
                         }
                     }
                 }
-                .padding(16)
-                .frame(width: 430)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
+            .padding(16)
         }
-        .frame(width: 430)
-        .frame(maxHeight: 620)
+        .frame(width: 720)
+        .fixedSize(horizontal: false, vertical: true)
         .onExitCommand { dismiss() }
     }
 
@@ -453,5 +457,6 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -1,17 +1,17 @@
 #!/bin/bash
-# DailyWall 自用版构建脚本
+# Dayflux 自用版构建脚本
 # 只依赖 Xcode Command Line Tools：swiftc + plutil + codesign + security，不需要 Xcode.app。
 # 默认用 signing/ 下的自签证书；DW_SIGN_MODE=adhoc 可临时回退到 ad-hoc 签名。
 set -euo pipefail
 
 # 软件版本号：升级版本只改这里。构建序号按「当天第 N 次成功构建」自动累加，
-# 最终显示格式为 V1.1.2(20261110.2)，即 20261110 当天第二次编译。
-APP_VERSION="1.1.2"
+# 最终显示格式为 V1.2.0(20261113.2)，即 20261113 当天第 2 次编译。
+APP_VERSION="1.2.0"
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP="$ROOT/build/DailyWall.app"
+APP="$ROOT/build/Dayflux.app"
 CONTENTS="$APP/Contents"
-BIN="$CONTENTS/MacOS/DailyWall"
+BIN="$CONTENTS/MacOS/Dayflux"
 
 echo "==> 检查工具链"
 command -v swiftc >/dev/null || { echo "缺少 swiftc，请先安装 Command Line Tools"; exit 1; }
@@ -53,7 +53,7 @@ enum BuildInfo {
 EOF
 echo "    ${BUILD_DISPLAY}"
 
-echo "==> 清理上一次的 app bundle（仅 build/DailyWall.app）"
+echo "==> 清理上一次的 app bundle（仅 build/Dayflux.app）"
 rm -rf "$APP"
 mkdir -p "$CONTENTS/MacOS"
 

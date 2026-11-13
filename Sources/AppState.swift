@@ -143,7 +143,7 @@ final class AppState: ObservableObject {
                 setMessage("当天壁纸已存在，按规则跳过：\(url.lastPathComponent)", isError: false)
             case .saved(let url, _, _, _), .overwritten(let url, _, _, _):
                 setMessage("已保存 \(url.lastPathComponent)", isError: false)
-                NotificationService.shared.send(title: "DailyWall", body: "今日壁纸已下载")
+                NotificationService.shared.send(title: "Dayflux", body: "今日壁纸已下载")
             }
             return true
         } catch {
@@ -193,7 +193,7 @@ final class AppState: ObservableObject {
             }
             try await DesktopService.shared.apply(target)
             setMessage("已设置桌面（所有已连接显示器）", isError: false)
-            NotificationService.shared.send(title: "DailyWall", body: "桌面壁纸已更新")
+            NotificationService.shared.send(title: "Dayflux", body: "桌面壁纸已更新")
             return true
         } catch {
             // 桌面设置失败不删除已下载文件（规格 4.3）。
