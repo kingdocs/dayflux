@@ -19,7 +19,7 @@ struct Smoke {
         // 清理本测试目录上一次的残留，保证「首次写入」判定不受历史文件影响。
         if let items = try? FileManager.default.contentsOfDirectory(
             at: tempDir, includingPropertiesForKeys: nil) {
-            for item in items where item.lastPathComponent.hasPrefix("DailyWall_") {
+            for item in items where item.lastPathComponent.hasPrefix("Dayflux_") {
                 try? FileManager.default.removeItem(at: item)
             }
         }
@@ -48,7 +48,7 @@ struct Smoke {
 
             WallpaperSettings.shared.directoryPath = tempDir.path
             let name = DownloadService.shared.fileName(for: wallpaper)
-            check("文件名格式", name.hasPrefix("DailyWall_") && name.hasSuffix("_zh-CN.jpg"), name)
+            check("文件名格式", name.hasPrefix("Dayflux_") && name.hasSuffix("_zh-CN.jpg"), name)
 
             let first = try DownloadService.shared.save(image, wallpaper: wallpaper, overwrite: false)
             if case .saved(let url, _, _, _) = first {

@@ -27,7 +27,7 @@
 
 ## 版本号与构建序号
 
-- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.5)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 5 次成功编译，作者 @Micheas。
+- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.6)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 6 次成功编译，作者 @Micheas。
 - 版本号在 `build.sh` 顶部 `APP_VERSION`、署名在 `AUTHOR_TAG` 各一处维护；每次 `./build.sh` **成功**后按当天日期自动累加序号，跨天归 1，构建失败不计数（下次仍用同一号）。
 - 序号存本机 `.buildcounter`（不入库，换机从 1 开始）；`build/generated/BuildInfo.swift` 由脚本生成，界面页脚与 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 使用同一份值。
 
@@ -115,7 +115,7 @@
 
 ## 文件、缓存与错误
 
-- 文件名：`DailyWall_<enddate>_zh-CN.jpg`，`enddate` 取 Bing 生效日；`idx=0&n=1` 固定，绝不为补齐历史请求其它日期。
+- 文件名：`Dayflux_<enddate>_zh-CN.jpg`，`enddate` 取 Bing 生效日；`idx=0&n=1` 固定，绝不为补齐历史请求其它日期。
 - 下载流程：临时文件原子写入 → JPEG 解码校验 → 原子移入目标，不产生伪完整成品。
 - 缓存仅在 `~/Library/Caches/DailyWall`，文件名以 `dw_` 开头；「清理应用缓存」只删这些文件，**不触碰保存目录**。
 - 错误提示同时说明发生了什么、可执行的动作、以及是否影响已有文件（一律不影响）。
@@ -138,7 +138,7 @@
 | 地区 | 已砍掉。实测 `mkt` 单独传入不改变返回内容；固定中文、固定 `zh-CN` 请求 |
 | 兼容性 | 只在 macOS 27.2 单台设备验证，未做跨版本兼容测试 |
 | 窗口缩放 | 主窗口固定宽度 430pt，未做缩放适配；预览区固定 398×224（16:9），与参考稿的卡片式设计一致 |
-| 定时调度 | 2026-11-10 08:46 实机验证通过：自动生成 `DailyWall_20261110_zh-CN.jpg`。10:08 端到端复验「失败当天不重试」修复：清空标记后重启 → 日志显示任务成功 → 才写回 `lastRunDate=20261110`；该次 `applyDesktop()` 亦返回成功（桌面视觉是否更换仍需肉眼确认） |
+| 定时调度 | 2026-11-10 08:46 实机验证通过：自动生成 `DailyWall_20261110_zh-CN.jpg`（当时前缀；2026-11-13 起新文件改为 `Dayflux_`）。10:08 端到端复验「失败当天不重试」修复：清空标记后重启 → 日志显示任务成功 → 才写回 `lastRunDate=20261110`；该次 `applyDesktop()` 亦返回成功（桌面视觉是否更换仍需肉眼确认） |
 | 不进 Dock | 按老板要求保持 `LSUIElement = true` + `.accessory`，不做 Dock 常驻。关闭主窗口后，从启动台/访达再次双击图标可唤出主窗口，或左键点菜单栏图标 |
 
 ## 网络通道与诊断
@@ -171,7 +171,7 @@
 ## 仓库与备份（2026-11-10）
 
 - 私有仓库：`https://github.com/kingdocs/dayflux`（账号 `kingdocs`，**private**），用途仅为工程与代码备份，不公开发布。旧名 `kingdocs/DailyWall` 由 GitHub 自动重定向。
-- **更名（2026-11-13）**：项目由 `DailyWall` 正式更名为 **Dayflux**，slogan 为 `Dayflux — Fresh wallpaper, every day.`；仓库 `kingdocs/DailyWall` → `kingdocs/dayflux`，工程目录 `DailyWall/` → `dayflux/`，应用 `DailyWall.app` → `Dayflux.app`，界面与文档品牌名统一为 Dayflux，版本升至 1.2.0。**内部标识一律保持不变**：bundle id `local.dailywall.selfuse`、`dw.*` 偏好键、壁纸文件名前缀 `DailyWall_`、缓存目录 `~/Library/Caches/DailyWall`、自签证书 CN `DailyWall Self-Use Code Signing`。**默认保存目录已改为** `~/Pictures/Dayflux`，但只作用于偏好为空的首次运行；本机已保存的偏好继续指向 `~/Pictures/DailyWall`，历史壁纸不迁移、不删除。理由：改 bundle id 会丢偏好与 TCC 授权，改证书 CN 等于换签名身份，擅自改本机目录会让已有壁纸分散。
+- **更名（2026-11-13）**：项目由 `DailyWall` 正式更名为 **Dayflux**，slogan 为 `Dayflux — Fresh wallpaper, every day.`；仓库 `kingdocs/DailyWall` → `kingdocs/dayflux`，工程目录 `DailyWall/` → `dayflux/`，应用 `DailyWall.app` → `Dayflux.app`，界面与文档品牌名统一为 Dayflux，版本升至 1.2.0。**内部标识保持不变**：bundle id `local.dailywall.selfuse`、`dw.*` 偏好键、缓存目录 `~/Library/Caches/DailyWall`、窗口 autosave key、自签证书 CN `DailyWall Self-Use Code Signing`。**壁纸文件名前缀自 2026-11-13 起改为 `Dayflux_`**（新下载文件为 `Dayflux_<日期>_zh-CN.jpg`），此前保存的历史文件仍用 `DailyWall_` 旧名、不重命名。默认保存目录为 `~/Pictures/Dayflux`（仅作用于偏好为空的首次运行）；本机 `dw.directoryPath` 已指向该目录，5 张历史壁纸完整保留。理由：改 bundle id 会丢偏好与 TCC 授权，改证书 CN 等于换签名身份；登录启动 `SMAppService.mainApp` 按 bundle id 注册，不受 app 改名影响。
 - **入库范围**：Swift 源码、`build.sh` / `Info.plist`、自签脚本与公钥证书、M0 核验工具与记录、图标源资产（`AppIcon.iconset` / `AppIcon.icns`）。
 - **未入库**（见 `.gitignore`）：
   - `signing/dailywall-selfsigned.p12`（私钥）与 `signing/.p12-password`（密码）—— 换机需自行补回，否则构建会报缺少密码；可用 `signing/create_selfsigned.sh` 重新生成（等于换身份）。

@@ -322,7 +322,7 @@ final class DownloadService {
     private let fm = FileManager.default
 
     func fileName(for wallpaper: Wallpaper) -> String {
-        "DailyWall_\(wallpaper.wallpaperDate)_zh-CN.jpg"
+        "Dayflux_\(wallpaper.wallpaperDate)_zh-CN.jpg"
     }
 
     func targetURL(for wallpaper: Wallpaper) throws -> URL {
