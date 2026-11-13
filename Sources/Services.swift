@@ -259,7 +259,7 @@ final class StorageService {
     func defaultDirectory() -> URL {
         let pictures = fm.urls(for: .picturesDirectory, in: .userDomainMask).first
             ?? fm.homeDirectoryForCurrentUser.appendingPathComponent("Pictures")
-        return pictures.appendingPathComponent("DailyWall", isDirectory: true)
+        return pictures.appendingPathComponent("Dayflux", isDirectory: true)
     }
 
     func directory() throws -> URL {
@@ -286,7 +286,7 @@ final class StorageService {
         if let path = WallpaperSettings.shared.directoryPath {
             return path.replacingOccurrences(of: fm.homeDirectoryForCurrentUser.path, with: "~")
         }
-        return "~/Pictures/DailyWall"
+        return "~/Pictures/Dayflux"
     }
 
     /// 通过 NSOpenPanel 由用户明确选择目录；不猜测、不擅自回退。

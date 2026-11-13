@@ -298,6 +298,16 @@ struct ContentView: View {
 
 // MARK: - 设置面板
 
+/// 分组说明：分类标题已按老板要求去掉，说明改挂在每组第一行控件旁。
+private enum SettingsHelp {
+    static let menuBar = "左键点菜单栏图标打开主窗口，右键打开菜单。关闭图标后，可在访达双击应用或从启动台打开。"
+    static let quality = "图片来源固定为 Bing 每日壁纸。超高清是请求偏好，实际像素以下载后解析结果为准。"
+    static let download = "更改目录只影响之后的下载，不迁移也不删除原目录文件。同一天的重复文件默认跳过，覆盖需逐次确认。"
+    static let automation = "应用常驻时每分钟检查一次，到点自动执行；关机或睡眠后恢复时按当天补一次，不追溯多日。若任务失败，5 分钟后自动重试，直到当天成功。"
+    static let notification = "系统拒绝通知授权或登录启动注册失败时，下载与更换桌面仍可正常使用。"
+    static let privacy = "缓存位于 ~/Library/Caches/DailyWall，仅用于预览与重试，与保存目录分离，不存放账号凭据。壁纸版权归原权利人，接口声明「仅限用作桌面壁纸」；本应用仅供自用，不打包、不分发、不商用图片。"
+}
+
 /// 纯 Command Line Tools 下 SwiftUI 的 @State 宏插件不可用，
 /// 用 ObservableObject 承载弹窗状态（与工程内其它视图一致的写法）。
 private final class HelpPopoverState: ObservableObject {
@@ -353,16 +363,18 @@ struct SettingsView: View {
 
             Divider()
 
-            // 双栏平铺：6 个分组左右各 3 个，去掉滚动条，一屏完整显示。
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 10) {
-                    section("菜单栏",
-                            help: "左键点菜单栏图标打开主窗口，右键打开菜单。关闭图标后，可在访达双击应用或从启动台打开。") {
+            // 单列上下排列：6 组一屏显示，分类标题已去掉，问号说明挂在每组首行控件旁。
+            VStack(alignment: .leading, spacing: 10) {
+                box {
+                    HStack(spacing: 6) {
                         Toggle("显示菜单栏图标", isOn: $settings.showMenuBarIcon)
+                        Spacer(minLength: 4)
+                        HelpButton(label: "菜单栏", text: SettingsHelp.menuBar)
                     }
+                }
 
-                    section("来源与清晰度",
-                            help: "图片来源固定为 Bing 每日壁纸。超高清是请求偏好，实际像素以下载后解析结果为准。") {
+                box {
+                    HStack(spacing: 6) {
                         Picker("清晰度", selection: $settings.preferUHD) {
                             Text("超高清 UHD（3840 × 2160）").tag(true)
                             Text("标准（1920 × 1080）").tag(false)
@@ -370,92 +382,94 @@ struct SettingsView: View {
                         .onChange(of: settings.preferUHD) {
                             Task { await state.changeQuality() }
                         }
+                        Spacer(minLength: 4)
+                        HelpButton(label: "来源与清晰度", text: SettingsHelp.quality)
                     }
+                }
 
-                    section("下载与保存",
-                            help: "更改目录只影响之后的下载，不迁移也不删除原目录文件。同一天的重复文件默认跳过，覆盖需逐次确认。") {
+                box {
+                    HStack(spacing: 6) {
                         Toggle("自动下载当天壁纸", isOn: $settings.autoDownload)
-                        HStack {
-                            Text(StorageService.shared.displayDirectory())
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Spacer()
-                            Button("更改…") { state.changeDirectory() }
-                        }
+                        Spacer(minLength: 4)
+                        HelpButton(label: "下载与保存", text: SettingsHelp.download)
+                    }
+                    HStack {
+                        Text(StorageService.shared.displayDirectory())
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Button("更改…") { state.changeDirectory() }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    section("自动化",
-                            help: "应用常驻时每分钟检查一次，到点自动执行；关机或睡眠后恢复时按当天补一次，不追溯多日。若任务失败，5 分钟后自动重试，直到当天成功。") {
+                box {
+                    HStack(spacing: 6) {
                         Toggle("每天定时更换桌面", isOn: $settings.autoChange)
-                        HStack(spacing: 6) {
-                            Text("每日时间")
-                            Picker("时", selection: $settings.dailyHour) {
-                                ForEach(0..<24, id: \.self) {
-                                    Text(String(format: "%02d", $0)).tag($0)
-                                }
-                            }
-                            .labelsHidden()
-                            .frame(width: 78)
-                            Text(":")
-                            Picker("分", selection: $settings.dailyMinute) {
-                                ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {
-                                    Text(String(format: "%02d", $0)).tag($0)
-                                }
-                            }
-                            .labelsHidden()
-                            .frame(width: 78)
-                            Spacer()
-                        }
+                        Spacer(minLength: 4)
+                        HelpButton(label: "自动化", text: SettingsHelp.automation)
                     }
-
-                    section("通知与启动",
-                            help: "系统拒绝通知授权或登录启动注册失败时，下载与更换桌面仍可正常使用。") {
-                        Toggle("下载完成通知", isOn: $settings.notifications)
-                        Toggle("登录时启动", isOn: Binding(
-                            get: { state.launchAtLogin },
-                            set: { value in Task { await state.setLaunchAtLogin(value) } }
-                        ))
-                    }
-
-                    section("隐私与缓存",
-                            help: "缓存位于 ~/Library/Caches/DailyWall，仅用于预览与重试，与保存目录分离，不存放账号凭据。壁纸版权归原权利人，接口声明「仅限用作桌面壁纸」；本应用仅供自用，不打包、不分发、不商用图片。") {
-                        HStack {
-                            Text("当前占用 \(ImageCache.shared.usageText())")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button("清理应用缓存") { state.clearCache() }
+                    HStack(spacing: 6) {
+                        Text("每日时间")
+                        Picker("时", selection: $settings.dailyHour) {
+                            ForEach(0..<24, id: \.self) {
+                                Text(String(format: "%02d", $0)).tag($0)
+                            }
                         }
+                        .labelsHidden()
+                        .frame(width: 78)
+                        Text(":")
+                        Picker("分", selection: $settings.dailyMinute) {
+                            ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {
+                                Text(String(format: "%02d", $0)).tag($0)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 78)
+                        Spacer()
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
+
+                box {
+                    HStack(spacing: 6) {
+                        Toggle("下载完成通知", isOn: $settings.notifications)
+                        Spacer(minLength: 4)
+                        HelpButton(label: "通知与启动", text: SettingsHelp.notification)
+                    }
+                    Toggle("登录时启动", isOn: Binding(
+                        get: { state.launchAtLogin },
+                        set: { value in Task { await state.setLaunchAtLogin(value) } }
+                    ))
+                }
+
+                box {
+                    HStack(spacing: 6) {
+                        Text("当前占用 \(ImageCache.shared.usageText())")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        HelpButton(label: "隐私与缓存", text: SettingsHelp.privacy)
+                        Spacer(minLength: 4)
+                        Button("清理应用缓存") { state.clearCache() }
+                    }
+                }
             }
             .padding(16)
         }
-        .frame(width: 720)
+        .frame(width: 430)
         .fixedSize(horizontal: false, vertical: true)
         .onExitCommand { dismiss() }
     }
 
+    /// 无分类标题的轻分组框：说明改由每组首行的问号按钮承载。
     @ViewBuilder
-    private func section<Content: View>(_ title: String, help: String,
-                                        @ViewBuilder content: () -> Content) -> some View {
+    private func box<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) { content() }
                 .padding(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
-            HStack(spacing: 6) {
-                Text(title).font(.system(size: 12, weight: .semibold))
-                HelpButton(label: title, text: help)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
+            EmptyView()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

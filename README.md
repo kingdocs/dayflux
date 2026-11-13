@@ -25,7 +25,7 @@
 
 ## 版本号与构建序号
 
-- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.2)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 2 次成功编译，作者 @Micheas。
+- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.4)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 4 次成功编译，作者 @Micheas。
 - 版本号在 `build.sh` 顶部 `APP_VERSION`、署名在 `AUTHOR_TAG` 各一处维护；每次 `./build.sh` **成功**后按当天日期自动累加序号，跨天归 1，构建失败不计数（下次仍用同一号）。
 - 序号存本机 `.buildcounter`（不入库，换机从 1 开始）；`build/generated/BuildInfo.swift` 由脚本生成，界面页脚与 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 使用同一份值。
 
@@ -64,7 +64,7 @@
 
 ## 首次使用
 
-1. 启动后应用只驻留菜单栏、不弹主窗口；左键点菜单栏图标调出主界面，顶部会提示「首次使用请选择保存目录」。默认建议目录是 `~/Pictures/DailyWall`；点「选择目录」可改。
+1. 启动后应用只驻留菜单栏、不弹主窗口；左键点菜单栏图标调出主界面，顶部会提示「首次使用请选择保存目录」。默认建议目录是 `~/Pictures/Dayflux`（2026-11-13 随更名调整，仅作用于偏好为空的首次运行）；**本机已保存的偏好仍指向 `~/Pictures/DailyWall`，历史壁纸留在原处，不自动迁移、不删除**；点「选择目录」可改。
 2. 目录只授权给这一个路径。应用**不会**删除、移动、重命名目录里的任何文件，也不做缓存清理到该目录。
 3. **左键点击菜单栏图标直接打开主窗口**；右键才弹出菜单（今日标题、立即下载、立即设置桌面、设置、退出）。关闭主窗口不会退出应用。
 
@@ -80,10 +80,10 @@
 | 打开目录 | 在 Finder 中显示成品文件（不存在则显示目录） |
 | 三行设置 | 点击打开设置面板 |
 
-设置面板为**左右双栏**布局（2026-11-13 改）：左栏「菜单栏」（含「显示菜单栏图标」开关）、来源与清晰度、下载与保存；右栏「自动化」、通知与启动、隐私与缓存。6 个分组一屏完整显示，**无滚动条**，窗口尺寸 720×357。
+设置面板为**上下单列**布局（2026-11-13 定稿）：6 组依次为菜单栏图标、清晰度、自动下载与保存目录、定时更换、通知与登录启动、缓存清理。宽度 430 与主窗口一致，**一屏完整显示、无滚动条**，窗口尺寸 430×498。
 
+- **已去掉 6 个分类标题**（2026-11-13 简化）：控件本身自解释，分组说明改由每组首行控件旁的 `?` 图标承载，点击弹出气泡；再点图标或点别处收起。
 - **「完成」按钮固定在顶部**：面板无滚动区域，按钮始终可见；也支持 Esc 关闭。
-- **说明改为问号气泡**（2026-11-10）：每个分组标题后有一个圆形 `?` 图标，点击弹出白色圆角气泡说明（参照 AlDente 样式，箭头指向图标）；界面不再常驻灰色小字，视觉更简洁。再点图标或点别处即可收起。
 
 ## 菜单栏交互
 
@@ -156,7 +156,7 @@
 
 - 界面截图：**`tools/main-window.png`（当前主界面，含版本页脚与「清洁键盘」按钮，已入库供本文档展示）**、`tools/preview_final.png`（早期主窗口，真实 Bing 当日图）、`tools/settings_v3.png`（旧版单栏设置面板：顶部完成按钮 + 问号图标，无常驻小字）、`tools/settings_help_popover.png`（点击问号弹出的说明气泡）、`tools/settings_menubar_toggle.png`（含「菜单栏」分组的旧版设置面板）。
 - 调试入口：`open build/Dayflux.app --args --show-settings`。注意在部分启动方式下 `open` 不把参数传给进程（2026-11-10、11-13 均实测发生过，日志里的启动参数可核对）；此时直接运行 `build/Dayflux.app/Contents/MacOS/Dayflux --show-settings` 可确保参数生效，或从主窗口任意一行设置点进设置面板。
-- 设置面板用 `HelpButton`（`questionmark.circle` + `.popover`）承载分组说明；纯 Command Line Tools 下 SwiftUI 的 `@State` 宏插件不可用，弹窗状态改用 `ObservableObject` + `@StateObject`。2026-11-13 起**移除 `ScrollView`**，改为左右双栏 + `.fixedSize(vertical: true)`，视图理想高度 720×357，一屏完整显示；顶部「完成」按钮始终可见。
+- 设置面板用 `HelpButton`（`questionmark.circle` + `.popover`）承载分组说明；纯 Command Line Tools 下 SwiftUI 的 `@State` 宏插件不可用，弹窗状态改用 `ObservableObject` + `@StateObject`。2026-11-13 起**移除 `ScrollView`**，改为上下单列 + `.fixedSize(vertical: true)`，一屏完整显示；并去掉 6 个分类标题，把问号说明移到每组首行控件旁，视图理想高度 430×498；顶部「完成」按钮始终可见。
 
 ## 与规格书的差异（自用定位下的裁剪）
 
@@ -169,7 +169,7 @@
 ## 仓库与备份（2026-11-10）
 
 - 私有仓库：`https://github.com/kingdocs/dayflux`（账号 `kingdocs`，**private**），用途仅为工程与代码备份，不公开发布。旧名 `kingdocs/DailyWall` 由 GitHub 自动重定向。
-- **更名（2026-11-13）**：项目由 `DailyWall` 正式更名为 **Dayflux**，slogan 为 `Dayflux — Fresh wallpaper, every day.`；仓库 `kingdocs/DailyWall` → `kingdocs/dayflux`，工程目录 `DailyWall/` → `dayflux/`，应用 `DailyWall.app` → `Dayflux.app`，界面与文档品牌名统一为 Dayflux，版本升至 1.2.0。**内部标识一律保持不变**：bundle id `local.dailywall.selfuse`、`dw.*` 偏好键、壁纸文件名前缀 `DailyWall_`、缓存目录 `~/Library/Caches/DailyWall`、默认保存目录 `~/Pictures/DailyWall`、自签证书 CN `DailyWall Self-Use Code Signing`。理由：改 bundle id 会丢偏好与 TCC 授权，改证书 CN 等于换签名身份，改数据路径会让已有壁纸目录分裂。
+- **更名（2026-11-13）**：项目由 `DailyWall` 正式更名为 **Dayflux**，slogan 为 `Dayflux — Fresh wallpaper, every day.`；仓库 `kingdocs/DailyWall` → `kingdocs/dayflux`，工程目录 `DailyWall/` → `dayflux/`，应用 `DailyWall.app` → `Dayflux.app`，界面与文档品牌名统一为 Dayflux，版本升至 1.2.0。**内部标识一律保持不变**：bundle id `local.dailywall.selfuse`、`dw.*` 偏好键、壁纸文件名前缀 `DailyWall_`、缓存目录 `~/Library/Caches/DailyWall`、自签证书 CN `DailyWall Self-Use Code Signing`。**默认保存目录已改为** `~/Pictures/Dayflux`，但只作用于偏好为空的首次运行；本机已保存的偏好继续指向 `~/Pictures/DailyWall`，历史壁纸不迁移、不删除。理由：改 bundle id 会丢偏好与 TCC 授权，改证书 CN 等于换签名身份，擅自改本机目录会让已有壁纸分散。
 - **入库范围**：Swift 源码、`build.sh` / `Info.plist`、自签脚本与公钥证书、M0 核验工具与记录、图标源资产（`AppIcon.iconset` / `AppIcon.icns`）。
 - **未入库**（见 `.gitignore`）：
   - `signing/dailywall-selfsigned.p12`（私钥）与 `signing/.p12-password`（密码）—— 换机需自行补回，否则构建会报缺少密码；可用 `signing/create_selfsigned.sh` 重新生成（等于换身份）。
