@@ -1,6 +1,8 @@
 # Dayflux（自用版 1.2.0）
 
 > **Dayflux — Fresh wallpaper, every day.**
+>
+> 主界面标题行在 `Dayflux` 后紧跟短式 ` - Fresh wallpaper, every day.`（小号次要色文字，2026-11-13 加）。
 
 **完全自用，不公开发布。** macOS 菜单栏应用，获取 Bing 每日壁纸、保存到自选目录、设为桌面。
 
@@ -25,7 +27,7 @@
 
 ## 版本号与构建序号
 
-- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.4)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 4 次成功编译，作者 @Micheas。
+- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.5)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 5 次成功编译，作者 @Micheas。
 - 版本号在 `build.sh` 顶部 `APP_VERSION`、署名在 `AUTHOR_TAG` 各一处维护；每次 `./build.sh` **成功**后按当天日期自动累加序号，跨天归 1，构建失败不计数（下次仍用同一号）。
 - 序号存本机 `.buildcounter`（不入库，换机从 1 开始）；`build/generated/BuildInfo.swift` 由脚本生成，界面页脚与 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 使用同一份值。
 

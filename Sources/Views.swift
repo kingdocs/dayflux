@@ -129,11 +129,19 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Dayflux")
-                    .font(.system(size: 16, weight: .semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
+            HStack(spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text("Dayflux")
+                        .font(.system(size: 16, weight: .semibold))
+                        .accessibilityAddTraits(.isHeader)
+                    Text(" - Fresh wallpaper, every day.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .layoutPriority(-1)
+                }
+                Spacer(minLength: 0)
                 StatusBadge(text: "今日壁纸")
             }
             .padding(.bottom, 12)
