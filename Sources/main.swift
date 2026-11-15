@@ -329,8 +329,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             guard let self else { return }
             if wantsMenu, let target {
                 dayfluxStatusLog("右键 → 弹出菜单")
+                // 锚点必须落在状态项按钮自身范围内。若把 y 设到按钮高度之外，
+                // 系统会判定菜单顶边越出屏幕，把第一项折叠成顶部滚动区，
+                // 鼠标移入时才展开并重排，表现为少一行且位置跳动。
                 _ = self.statusMenu?.popUp(positioning: nil,
-                                           at: NSPoint(x: 0, y: target.bounds.height + 4),
+                                           at: .zero,
                                            in: target)
             } else {
                 dayfluxStatusLog("左键 → 显示主窗口")

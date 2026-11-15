@@ -9,8 +9,8 @@ set -euo pipefail
 #   第 2 位 功能位：小的功能性调整时修改
 #   第 3 位 修复位：纯 BUG 修复时修改
 # 构建序号按「当天第 N 次成功构建」自动累加，最终显示格式
-# 为 V<版本>(<yyyymmdd>.<当天序号>)，例如 V2.1.0(20261115.5)。
-APP_VERSION="2.1.0"
+# 为 V<版本>(<yyyymmdd>.<当天序号>)，例如 V2.1.1(20261115.11)。
+APP_VERSION="2.1.1"
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="$ROOT/build/Dayflux.app"
