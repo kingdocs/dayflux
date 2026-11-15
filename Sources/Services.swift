@@ -165,6 +165,9 @@ struct CachedImage {
 final class ImageCache {
     static let shared = ImageCache()
 
+    /// 缓存目录名（2026-11-15 起随品牌统一为 Dayflux）；界面文案与冒烟断言共用，避免路径漂移。
+    static let directoryName = "Dayflux"
+
     let directory: URL
     private let fm = FileManager.default
     private let session: URLSession = {
@@ -177,7 +180,7 @@ final class ImageCache {
         return URLSession(configuration: config)
     }()
 
-    /// directory 参数仅供隔离测试使用；正式运行固定为 ~/Library/Caches/DailyWall。
+    /// directory 参数仅供隔离测试使用；正式运行固定为 ~/Library/Caches/Dayflux。
     init(directory: URL? = nil) {
         let resolved: URL
         if let directory {
@@ -185,7 +188,7 @@ final class ImageCache {
         } else {
             let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
                 ?? URL(fileURLWithPath: NSTemporaryDirectory())
-            resolved = base.appendingPathComponent("DailyWall", isDirectory: true)
+            resolved = base.appendingPathComponent(Self.directoryName, isDirectory: true)
         }
         self.directory = resolved
         try? Self.prepare(resolved)

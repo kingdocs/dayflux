@@ -88,6 +88,7 @@ struct Smoke {
         // 缓存目录可能被系统清理：必须能自愈，且缓存不可写时不得阻断主流程。
         // 全程使用 /tmp 下隔离目录，不触碰真实 ~/Library/Caches。
         print("\n=== 缓存目录自愈 ===")
+        check("缓存目录名随品牌统一", ImageCache.directoryName == "Dayflux")
         do {
             let fm = FileManager.default
             let isolated = URL(fileURLWithPath: NSTemporaryDirectory())

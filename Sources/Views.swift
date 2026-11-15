@@ -313,7 +313,7 @@ private enum SettingsHelp {
     static let download = "更改目录只影响之后的下载，不迁移也不删除原目录文件。同一天的重复文件默认跳过，覆盖需逐次确认。"
     static let automation = "应用常驻时每分钟检查一次，到点自动执行；关机或睡眠后恢复时按当天补一次，不追溯多日。若任务失败，5 分钟后自动重试，直到当天成功。"
     static let notification = "系统拒绝通知授权或登录启动注册失败时，下载与更换桌面仍可正常使用。"
-    static let privacy = "缓存位于 ~/Library/Caches/DailyWall，仅用于预览与重试，与保存目录分离，不存放账号凭据。壁纸版权归原权利人，接口声明「仅限用作桌面壁纸」；本应用仅供自用，不打包、不分发、不商用图片。"
+    static let privacy = "缓存位于 ~/Library/Caches/\(ImageCache.directoryName)，仅用于预览与重试，与保存目录分离，不存放账号凭据。壁纸版权归原权利人，接口声明「仅限用作桌面壁纸」；本应用仅供自用，不打包、不分发、不商用图片。"
 }
 
 /// 纯 Command Line Tools 下 SwiftUI 的 @State 宏插件不可用，
