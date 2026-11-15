@@ -1,4 +1,4 @@
-# Dayflux（自用版 1.2.0）
+# Dayflux（自用版 1.2.1）
 
 > **Dayflux — Fresh wallpaper, every day.**
 >
@@ -27,7 +27,9 @@
 
 ## 版本号与构建序号
 
-- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.0(20261113.6)@Micheas` 表示：软件版本 1.2.0，2026-11-13 当天第 6 次成功编译，作者 @Micheas。
+- 主界面右下角显示版本、构建信息与作者署名，例如 `V1.2.1(20261115.2)@Micheas` 表示：软件版本 1.2.1，2026-11-15 当天第 2 次成功编译，作者 @Micheas。
+- **三段语义化版本规则（2026-11-15 定）**：第 1 位是**大版本号**，有新增功能或大的功能性升级时修改；第 2 位用于**小的功能性调整**；第 3 位**只在纯 BUG 修复时**修改。当前 `1.2.1` 即因「缓存目录被系统清理后全天自动任务失败」这一纯 BUG 修复从 `1.2.0` 升位。
+- **版本历史**：`1.1.2` 修复唤醒后设桌面静默失败；`1.2.0` 更名 Dayflux + 设置面板单列定稿 + slogan + 壁纸前缀改 `Dayflux_`；`1.2.1`（2026-11-15）修复缓存目录被系统清理后全天自动任务失败，属纯 BUG 修复。
 - 版本号在 `build.sh` 顶部 `APP_VERSION`、署名在 `AUTHOR_TAG` 各一处维护；每次 `./build.sh` **成功**后按当天日期自动累加序号，跨天归 1，构建失败不计数（下次仍用同一号）。
 - 序号存本机 `.buildcounter`（不入库，换机从 1 开始）；`build/generated/BuildInfo.swift` 由脚本生成，界面页脚与 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 使用同一份值。
 
@@ -118,6 +120,7 @@
 - 文件名：`Dayflux_<enddate>_zh-CN.jpg`，`enddate` 取 Bing 生效日；`idx=0&n=1` 固定，绝不为补齐历史请求其它日期。
 - 下载流程：临时文件原子写入 → JPEG 解码校验 → 原子移入目标，不产生伪完整成品。
 - 缓存仅在 `~/Library/Caches/DailyWall`，文件名以 `dw_` 开头；「清理应用缓存」只删这些文件，**不触碰保存目录**。
+- **缓存目录自愈（2026-11-15 修复）**：系统会清理 `~/Library/Caches` 下的目录，旧版只在单例初始化时建一次，目录消失后写缓存抛 `NSCocoaErrorDomain code=4`，连带预览、下载、设桌面全部失败并每 5 分钟重试。现在每次写入前自动重建目录；缓存写入失败只记日志并降级为纯内存，图片已在内存中，主流程不受影响。
 - 错误提示同时说明发生了什么、可执行的动作、以及是否影响已有文件（一律不影响）。
 
 ## 使用边界（重要）
@@ -149,7 +152,7 @@
 - 复核工具：
 
   ```bash
-  # 核心链路 + 调度策略冒烟测试（20 项，含 6 项调度策略）
+  # 核心链路 + 调度策略 + 缓存自愈冒烟测试（36 项，含 8 项缓存自愈）
   swiftc -O -swift-version 5 Sources/Models.swift Sources/Services.swift tools/smoke/Smoke.swift -o /tmp/dw_smoke && /tmp/dw_smoke
   # 网络出口探针（模拟无代理环境变量）
   swiftc -O -swift-version 5 -parse-as-library tools/NetProbe.swift -o /tmp/dw_netprobe

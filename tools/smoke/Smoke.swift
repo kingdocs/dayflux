@@ -85,6 +85,48 @@ struct Smoke {
             failures += 1
         }
 
+        // 缓存目录可能被系统清理：必须能自愈，且缓存不可写时不得阻断主流程。
+        // 全程使用 /tmp 下隔离目录，不触碰真实 ~/Library/Caches。
+        print("\n=== 缓存目录自愈 ===")
+        do {
+            let fm = FileManager.default
+            let isolated = URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent("dw_smoke_cache_selfheal", isDirectory: true)
+            try? fm.removeItem(at: isolated)
+
+            let cache = ImageCache(directory: isolated)
+            check("缓存目录按需创建", fm.fileExists(atPath: isolated.path))
+
+            try fm.removeItem(at: isolated)  // 模拟系统清理掉整个缓存目录
+            check("模拟目录被清理", !fm.fileExists(atPath: isolated.path))
+            check("目录缺失时用量统计不报错", cache.usageText().contains("MB"))
+
+            try ImageCache.prepare(isolated)
+            var isDir: ObjCBool = false
+            check("写入前自动重建目录",
+                  fm.fileExists(atPath: isolated.path, isDirectory: &isDir) && isDir.boolValue)
+
+            let sample = isolated.appendingPathComponent("dw_test.jpg")
+            check("缓存可写入", cache.store(Data([0xFF, 0xD8, 0xFF]), at: sample)
+                  && fm.fileExists(atPath: sample.path))
+            try cache.clear()
+            check("清理缓存后目录仍在", fm.fileExists(atPath: isolated.path))
+
+            // 同名文件占用缓存路径：prepare 明确报错，store 降级返回 false 而不抛异常。
+            try fm.removeItem(at: isolated)
+            try Data([0x01]).write(to: isolated)
+            let blocked = ImageCache(directory: isolated)
+            var prepareThrew = false
+            do { try ImageCache.prepare(isolated) } catch { prepareThrew = true }
+            check("路径被文件占用时明确报错", prepareThrew)
+            check("缓存不可写时降级不抛异常",
+                  !blocked.store(Data([0xFF]), at: isolated.appendingPathComponent("dw_x.jpg")))
+            try? fm.removeItem(at: isolated)
+        } catch {
+            print("[FAIL] 缓存自愈异常: \(error)")
+            failures += 1
+        }
+
         // 调度策略：失败当天必须能重试，成功后当天不再重复执行。
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "Asia/Shanghai")!

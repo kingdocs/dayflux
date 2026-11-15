@@ -11,6 +11,7 @@ enum DWError: LocalizedError {
     case missingField(String)
     case invalidContent(String)
     case directory(String)
+    case cache(String)
     case write(String)
     case desktop(String)
     case cancelled
@@ -23,6 +24,7 @@ enum DWError: LocalizedError {
         case .missingField(let f): return "接口响应缺少必要字段 \(f)"
         case .invalidContent(let m): return "图片内容校验失败：\(m)"
         case .directory(let m): return "保存目录不可用：\(m)"
+        case .cache(let m):     return "应用缓存不可用：\(m)"
         case .write(let m):     return "写入失败：\(m)"
         case .desktop(let m):   return "设置桌面失败：\(m)"
         case .cancelled:        return "操作已取消"
@@ -37,6 +39,7 @@ enum DWError: LocalizedError {
         case .missingField:  return "接口结构可能已变化，请重新执行 M0 核验。已有文件不受影响。"
         case .invalidContent: return "未写入正式壁纸文件，可重试。已有文件不受影响。"
         case .directory:     return "在「设置」中重新选择目录，并确认有写权限。已有文件不受影响。"
+        case .cache:         return "可忽略；缓存只影响加载速度，不影响下载与更换桌面。已有文件不受影响。"
         case .write:         return "检查磁盘空间与目录权限后重试。已有文件不受影响。"
         case .desktop:       return "已下载的文件保留，可手动在 Finder 中设置，或稍后重试。"
         case .cancelled:     return "已有文件不受影响。"

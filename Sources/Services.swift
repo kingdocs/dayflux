@@ -177,11 +177,44 @@ final class ImageCache {
         return URLSession(configuration: config)
     }()
 
-    init() {
-        let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory())
-        directory = base.appendingPathComponent("DailyWall", isDirectory: true)
-        try? fm.createDirectory(at: directory, withIntermediateDirectories: true)
+    /// directory 参数仅供隔离测试使用；正式运行固定为 ~/Library/Caches/DailyWall。
+    init(directory: URL? = nil) {
+        let resolved: URL
+        if let directory {
+            resolved = directory
+        } else {
+            let base = fm.urls(for: .cachesDirectory, in: .userDomainMask).first
+                ?? URL(fileURLWithPath: NSTemporaryDirectory())
+            resolved = base.appendingPathComponent("DailyWall", isDirectory: true)
+        }
+        self.directory = resolved
+        try? Self.prepare(resolved)
+    }
+
+    /// 系统会随时清理 ~/Library/Caches 下的目录，不能只靠单例初始化时创建的那一次。
+    static func prepare(_ url: URL) throws {
+        let fm = FileManager.default
+        var isDir: ObjCBool = false
+        if fm.fileExists(atPath: url.path, isDirectory: &isDir) {
+            guard isDir.boolValue else {
+                throw DWError.cache("缓存路径被同名文件占用：\(url.lastPathComponent)")
+            }
+            return
+        }
+        try fm.createDirectory(at: url, withIntermediateDirectories: true)
+    }
+
+    /// 缓存只是加速手段：写入失败时降级为纯内存，绝不让预览/下载/设桌面一起失败。
+    @discardableResult
+    func store(_ data: Data, at target: URL) -> Bool {
+        do {
+            try Self.prepare(directory)
+            try data.write(to: target, options: .atomic)
+            return true
+        } catch {
+            DWLog.net("缓存写入跳过（不影响本次使用）：\(error.localizedDescription)")
+            return false
+        }
     }
 
     private func cacheFile(for url: URL) -> URL {
@@ -227,13 +260,14 @@ final class ImageCache {
         guard let size = ImageProbe.jpegSize(data) else {
             throw DWError.invalidContent("JPEG 无法解码")
         }
-        try data.write(to: target, options: .atomic)
+        store(data, at: target)
         return CachedImage(data: data, fileURL: target, width: size.width,
                            height: size.height, contentType: "image/jpeg")
     }
 
     /// 只删除本应用创建的 dw_ 前缀文件，绝不触碰用户保存目录（规格 4.5）。
     func clear() throws {
+        try Self.prepare(directory)
         let items = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
         for item in items where item.lastPathComponent.hasPrefix("dw_") {
             try? fm.removeItem(at: item)
