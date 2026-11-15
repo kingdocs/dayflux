@@ -2,9 +2,9 @@ import Foundation
 import AppKit
 
 // MARK: - 错误模型
-// 每条错误同时给出「发生了什么」与「用户可执行的动作」，符合规格第 5 节。
+// 每条错误同时给出「发生了什么」与「用户可执行的动作」。
 
-enum DWError: LocalizedError {
+enum DayfluxError: LocalizedError {
     case network(String)
     case http(Int)
     case emptyData
@@ -36,7 +36,7 @@ enum DWError: LocalizedError {
         case .network:       return "检查网络后点「重试」。已有文件不受影响。"
         case .http:          return "稍后重试；接口为非正式使用方式，可能临时变更。已有文件不受影响。"
         case .emptyData:     return "稍后重试。已有文件不受影响。"
-        case .missingField:  return "接口结构可能已变化，请重新执行 M0 核验。已有文件不受影响。"
+        case .missingField:  return "接口结构可能已变化，请稍后重试或检查网络。已有文件不受影响。"
         case .invalidContent: return "未写入正式壁纸文件，可重试。已有文件不受影响。"
         case .directory:     return "在「设置」中重新选择目录，并确认有写权限。已有文件不受影响。"
         case .cache:         return "可忽略；缓存只影响加载速度，不影响下载与更换桌面。已有文件不受影响。"
@@ -74,7 +74,7 @@ struct BingTooltips: Decodable {
 // MARK: - 运行期模型（不保留整段接口响应）
 
 struct Wallpaper {
-    /// 取接口 enddate（Bing 生效日），YYYYMMDD。见 M0 核验记录 A-2。
+    /// 取接口 enddate（Bing 生效日），YYYYMMDD。
     let wallpaperDate: String
     let title: String?
     let copyright: String?
@@ -137,7 +137,7 @@ enum ImageProbe {
 
 // MARK: - 小工具
 
-enum DWFormat {
+enum DayfluxFormat {
     static let fileDateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyyMMdd"
@@ -179,7 +179,7 @@ enum SchedulePolicy {
         let currentMinute = calendar.component(.minute, from: now)
         let due = currentHour > hour || (currentHour == hour && currentMinute >= minute)
         guard due else { return false }
-        guard lastRunDate != DWFormat.todayString(now) else { return false }
+        guard lastRunDate != DayfluxFormat.todayString(now) else { return false }
         if let lastAttempt, now.timeIntervalSince(lastAttempt) < retryInterval {
             return false
         }
@@ -197,7 +197,7 @@ enum SchedulePolicy {
                          lastRunDate: String?,
                          lastAttempt: Date?,
                          notBefore: Date? = nil) -> Date {
-        let today = DWFormat.todayString(now)
+        let today = DayfluxFormat.todayString(now)
         let target = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now)!
         let fire: Date
         if lastRunDate == today {
@@ -217,9 +217,9 @@ enum SchedulePolicy {
 
 // MARK: - 诊断日志与备用网络通道
 
-enum DWLog {
-    static func net(_ message: String) { write(message, to: "/tmp/dw_app_net.log") }
-    static func schedule(_ message: String) { write(message, to: "/tmp/dw_schedule.log") }
+enum DayfluxLog {
+    static func net(_ message: String) { write(message, to: "/tmp/dayflux_app_net.log") }
+    static func schedule(_ message: String) { write(message, to: "/tmp/dayflux_schedule.log") }
 
     private static func write(_ message: String, to path: String) {
         let stamp = ISO8601DateFormatter().string(from: Date())
@@ -237,10 +237,10 @@ enum DWLog {
 
 enum CurlFallback {
     /// URLSession 通道失败时启用系统 curl 直连。
-    /// 实测：同一 GUI bundle 内 curl 直连 0.27s 返回 200，不受代理与 ATS 影响。
+    /// 备用通道使用系统 curl 直连，不受应用代理配置影响。
     static func fetch(_ url: URL, timeout: Int = 15) throws -> Data {
         let output = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("dw_curl_\(UUID().uuidString).bin")
+            .appendingPathComponent("dayflux_curl_\(UUID().uuidString).bin")
         defer { try? FileManager.default.removeItem(at: output) }
 
         let process = Process()
@@ -253,13 +253,13 @@ enum CurlFallback {
         do {
             try process.run()
         } catch {
-            throw DWError.network("备用通道无法启动：\(error.localizedDescription)")
+            throw DayfluxError.network("备用通道无法启动：\(error.localizedDescription)")
         }
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             let detail = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(),
                                 encoding: .utf8) ?? ""
-            throw DWError.network("备用通道失败：\(detail.trimmingCharacters(in: .whitespacesAndNewlines))")
+            throw DayfluxError.network("备用通道失败：\(detail.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
         return try Data(contentsOf: output)
     }

@@ -5,9 +5,9 @@ import Foundation
 import SwiftUI
 
 /// 状态项诊断日志（仅写入 /tmp，不触碰用户目录）。
-private func dwStatusLog(_ message: String) {
+private func dayfluxStatusLog(_ message: String) {
     let line = "\(Date().ISO8601Format()) \(message)\n"
-    let path = "/tmp/dw_status.log"
+    let path = "/tmp/dayflux_status.log"
     guard let data = line.data(using: .utf8) else { return }
     if let handle = FileHandle(forWritingAtPath: path) {
         handle.seekToEndOfFile()
@@ -71,8 +71,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     private var cleanerCancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        dwStatusLog("启动参数 \(CommandLine.arguments)")
-        dwStatusLog("辅助功能授权=\(AXIsProcessTrusted())")
+        dayfluxStatusLog("启动参数 \(CommandLine.arguments)")
+        dayfluxStatusLog("辅助功能授权=\(AXIsProcessTrusted())")
         // 启动不弹主界面：只驻留菜单栏/后台；窗口在首次需要时懒创建。
         applyStatusItemVisibility()
         // 设置面板里切换「显示菜单栏图标」时立即创建/移除状态项。
@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         // 调试入口：open build/Dayflux.app --args --show-settings
         // 延迟到界面完成首次渲染后再触发 sheet，避免在 didFinishLaunching 里被吞掉。
         if CommandLine.arguments.contains("--show-settings") {
-            dwStatusLog("调试参数生效：--show-settings")
+            dayfluxStatusLog("调试参数生效：--show-settings")
             showWindow()
             Task { @MainActor [weak self] in self?.state.showingSettings = true }
         }
@@ -114,7 +114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     /// 不需要再从右键菜单里选「打开主窗口」。
     func applicationShouldHandleReopen(_ sender: NSApplication,
                                        hasVisibleWindows flag: Bool) -> Bool {
-        dwStatusLog("收到重新打开请求（启动台/访达双击）→ 显示主窗口")
+        dayfluxStatusLog("收到重新打开请求（启动台/访达双击）→ 显示主窗口")
         showWindow()
         return true
     }
@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     // MARK: - 主窗口
 
     private func buildWindow() {
-        dwStatusLog("buildWindow 创建主窗口（懒创建）")
+        dayfluxStatusLog("buildWindow 创建主窗口（懒创建）")
         let hosting = NSHostingController(rootView: ContentView(state: state))
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 430, height: 580),
@@ -138,7 +138,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         // 并显式隐藏最小化与绿色缩放/全屏两个标准按钮。
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
-        window.setFrameAutosaveName("DailyWallMainWindow")
+        window.setFrameAutosaveName("DayfluxMainWindow")
         let fitting = hosting.view.fittingSize
         if fitting.height > 200 {
             window.setContentSize(NSSize(width: 430, height: fitting.height))
@@ -148,7 +148,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     }
 
     private func showWindow() {
-        dwStatusLog("showWindow 调出主窗口")
+        dayfluxStatusLog("showWindow 调出主窗口")
         // 懒创建：启动时不建窗口，首次点菜单栏图标时才创建。
         if window == nil { buildWindow() }
         state.notifyWindowVisibility(true)
@@ -185,7 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         state.releasePreviewResources()
         // 关窗时若仍在清洁，务必解除键盘拦截，否则只剩鼠标、键盘会卡在禁用状态。
         if state.cleaningMode { state.cleaningMode = false }
-        dwStatusLog("主窗口关闭 → 释放预览资源（窗口重开时从磁盘缓存恢复）")
+        dayfluxStatusLog("主窗口关闭 → 释放预览资源（窗口重开时从磁盘缓存恢复）")
     }
 
     // MARK: - 键盘清洁
@@ -217,7 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
             // F1–F12 等功能键以 NX_SYSDEFINED(14) 投递；记录前几次便于确认拦截生效。
             if type.rawValue == 14 && gCleaningSystemEventLogCount < 8 {
                 gCleaningSystemEventLogCount += 1
-                dwStatusLog("键盘清洁：已拦截功能键/系统控制事件 type=14（第 \(gCleaningSystemEventLogCount) 次）")
+                dayfluxStatusLog("键盘清洁：已拦截功能键/系统控制事件 type=14（第 \(gCleaningSystemEventLogCount) 次）")
             }
             // 返回 nil = 丢弃事件：键盘与功能键不进入任何应用或系统功能。
             return nil
@@ -247,7 +247,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         window?.makeKeyAndOrderFront(nil)
         window?.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
-        dwStatusLog("键盘清洁：全局拦截已开启（含 F1–F12 系统控制键，鼠标放行）")
+        dayfluxStatusLog("键盘清洁：全局拦截已开启（含 F1–F12 系统控制键，鼠标放行）")
     }
 
     /// 关闭清洁：停用并销毁拦截，键盘恢复正常。
@@ -265,7 +265,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         runLoopSource = nil
         gCleaningTap = nil
         window?.level = .normal
-        dwStatusLog("键盘清洁：键盘拦截已关闭")
+        dayfluxStatusLog("键盘清洁：键盘拦截已关闭")
     }
 
     /// 申请辅助功能权限（系统弹窗 + 打开设置面板的辅助功能页）。
@@ -280,7 +280,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     // MARK: - 菜单栏
 
     /// 按设置创建或彻底移除状态项。关闭时用 removeStatusItem，
-    /// 让系统与 Dimble 不再看到本应用自己的菜单栏图标。
+    /// 关闭后不再创建本应用的菜单栏状态项。
     private func applyStatusItemVisibility() {
         if state.settings.showMenuBarIcon {
             if statusItem == nil { buildStatusItem() }
@@ -292,14 +292,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
                 statusBarAction = nil
                 menuActions.removeAll()
             }
-            dwStatusLog("状态项未创建（显示菜单栏图标=关）")
+            dayfluxStatusLog("状态项未创建（显示菜单栏图标=关）")
         }
     }
 
     private func buildStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         guard let button = item.button else {
-            dwStatusLog("状态项创建失败：button 为 nil")
+            dayfluxStatusLog("状态项创建失败：button 为 nil")
             return
         }
         button.image = makeMenuBarIcon()
@@ -335,12 +335,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         let action = StatusBarAction { [weak self] target, wantsMenu in
             guard let self else { return }
             if wantsMenu, let target {
-                dwStatusLog("右键 → 弹出菜单")
+                dayfluxStatusLog("右键 → 弹出菜单")
                 _ = self.statusMenu?.popUp(positioning: nil,
                                            at: NSPoint(x: 0, y: target.bounds.height + 4),
                                            in: target)
             } else {
-                dwStatusLog("左键 → 显示主窗口")
+                dayfluxStatusLog("左键 → 显示主窗口")
                 self.showWindow()
             }
         }
@@ -351,7 +351,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         button.target = action
         button.action = #selector(StatusBarAction.run(_:))
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        dwStatusLog("状态项已创建 左键=主窗口 右键=菜单 window=\(button.window == nil ? "nil" : "OK")")
+        dayfluxStatusLog("状态项已创建 左键=主窗口 右键=菜单 window=\(button.window == nil ? "nil" : "OK")")
     }
 
     /// 菜单栏专用单色模板图：相框 + 日轮 + 山脊，与 App 图标同一视觉语言。

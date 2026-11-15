@@ -1,7 +1,7 @@
 #!/bin/bash
-# Dayflux 自用版构建脚本
+# Dayflux 构建脚本
 # 只依赖 Xcode Command Line Tools：swiftc + plutil + codesign + security，不需要 Xcode.app。
-# 默认用 signing/ 下的自签证书；DW_SIGN_MODE=adhoc 可临时回退到 ad-hoc 签名。
+# 默认用 signing/ 下的自签证书；DAYFLUX_SIGN_MODE=adhoc 可临时回退到 ad-hoc 签名。
 set -euo pipefail
 
 # 软件版本号（三段语义化，升级版本只改这里）：
@@ -9,8 +9,8 @@ set -euo pipefail
 #   第 2 位 功能位：小的功能性调整时修改
 #   第 3 位 修复位：纯 BUG 修复时修改
 # 构建序号按「当天第 N 次成功构建」自动累加，最终显示格式
-# 为 V1.2.2(20261115.3)，即 20261115 当天第 3 次编译。
-APP_VERSION="1.2.2"
+# 为 V<版本>(<yyyymmdd>.<当天序号>)，例如 V2.0.0(20261115.4)。
+APP_VERSION="2.0.0"
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 APP="$ROOT/build/Dayflux.app"
@@ -76,9 +76,9 @@ if [ -f "$ROOT/AppIcon.icns" ]; then
 fi
 plutil -lint "$CONTENTS/Info.plist"
 
-echo "==> 代码签名（默认用 signing/ 下的自签证书；DW_SIGN_MODE=adhoc 可临时回退）"
-if [ "${DW_SIGN_MODE:-selfsigned}" = "adhoc" ]; then
-  codesign -s - --force --identifier local.dailywall.selfuse "$APP"
+echo "==> 代码签名（默认用 signing/ 下的自签证书；DAYFLUX_SIGN_MODE=adhoc 可临时回退）"
+if [ "${DAYFLUX_SIGN_MODE:-selfsigned}" = "adhoc" ]; then
+  codesign -s - --force --identifier com.kingdocs.dayflux "$APP"
   codesign -v --verbose=2 "$APP"
 else
   "$ROOT/signing/sign_app.sh" "$APP"

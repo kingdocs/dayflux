@@ -9,15 +9,15 @@ final class WallpaperSettings: ObservableObject {
     static let shared = WallpaperSettings()
 
     private enum Key {
-        static let preferUHD = "dw.preferUHD"
-        static let autoDownload = "dw.autoDownload"
-        static let autoChange = "dw.autoChange"
-        static let dailyHour = "dw.dailyHour"
-        static let dailyMinute = "dw.dailyMinute"
-        static let directoryPath = "dw.directoryPath"
-        static let notifications = "dw.notifications"
-        static let lastRunDate = "dw.lastRunDate"
-        static let showMenuBarIcon = "dw.showMenuBarIcon"
+        static let preferUHD = "dayflux.preferUHD"
+        static let autoDownload = "dayflux.autoDownload"
+        static let autoChange = "dayflux.autoChange"
+        static let dailyHour = "dayflux.dailyHour"
+        static let dailyMinute = "dayflux.dailyMinute"
+        static let directoryPath = "dayflux.directoryPath"
+        static let notifications = "dayflux.notifications"
+        static let lastRunDate = "dayflux.lastRunDate"
+        static let showMenuBarIcon = "dayflux.showMenuBarIcon"
     }
 
     private let defaults = UserDefaults.standard
@@ -28,7 +28,7 @@ final class WallpaperSettings: ObservableObject {
     @Published var dailyHour: Int = 8 { didSet { defaults.set(dailyHour, forKey: Key.dailyHour) } }
     @Published var dailyMinute: Int = 0 { didSet { defaults.set(dailyMinute, forKey: Key.dailyMinute) } }
     @Published var notifications: Bool = false { didSet { defaults.set(notifications, forKey: Key.notifications) } }
-    /// 是否显示本应用自己的菜单栏状态项。关闭后由 Dimble 启动器或访达双击打开应用。
+    /// 是否显示本应用自己的菜单栏状态项。关闭后可从访达双击或启动台打开应用。
     @Published var showMenuBarIcon: Bool = true {
         didSet { defaults.set(showMenuBarIcon, forKey: Key.showMenuBarIcon) }
     }
@@ -77,7 +77,7 @@ final class BingWallpaperService {
         return URLSession(configuration: config)
     }()
 
-    /// 短期元数据缓存，仅内存，不持久化整段响应（规格 6.1 / 7.2）。
+    /// 短期元数据缓存，仅内存，不持久化整段响应。
     private var cached: (wallpaper: Wallpaper, at: Date)?
     private let cacheTTL: TimeInterval = 15 * 60
 
@@ -86,61 +86,61 @@ final class BingWallpaperService {
             return c.wallpaper
         }
         guard var comps = URLComponents(string: "https://www.bing.com/HPImageArchive.aspx") else {
-            throw DWError.network("无法构造请求地址")
+            throw DayfluxError.network("无法构造请求地址")
         }
-        // 固定 idx=0&n=1：n>1 会返回历史，违反「仅当天」约束（M0 记录 A-3）。
+        // 固定 idx=0&n=1：n>1 会返回历史，违反「仅当天」约束。
         comps.queryItems = [
             URLQueryItem(name: "format", value: "js"),
             URLQueryItem(name: "idx", value: "0"),
             URLQueryItem(name: "n", value: "1"),
             URLQueryItem(name: "mkt", value: "zh-CN"),
         ]
-        guard let url = comps.url else { throw DWError.network("无法构造请求地址") }
+        guard let url = comps.url else { throw DayfluxError.network("无法构造请求地址") }
 
-        DWLog.net("元数据请求开始 \(url.absoluteString)")
+        DayfluxLog.net("元数据请求开始 \(url.absoluteString)")
         do {
             let (data, response) = try await session.data(from: url)
             guard let http = response as? HTTPURLResponse else {
-                throw DWError.network("无有效 HTTP 响应")
+                throw DayfluxError.network("无有效 HTTP 响应")
             }
-            guard (200..<300).contains(http.statusCode) else { throw DWError.http(http.statusCode) }
+            guard (200..<300).contains(http.statusCode) else { throw DayfluxError.http(http.statusCode) }
             let wallpaper = try decodedWallpaper(from: data)
             cached = (wallpaper, Date())
-            DWLog.net("元数据成功 URLSession \(data.count) bytes")
+            DayfluxLog.net("元数据成功 URLSession \(data.count) bytes")
             return wallpaper
         } catch {
             let nsError = error as NSError
-            DWLog.net("URLSession 失败 domain=\(nsError.domain) code=\(nsError.code) desc=\(nsError.localizedDescription)，切换 curl 备用通道")
+            DayfluxLog.net("URLSession 失败 domain=\(nsError.domain) code=\(nsError.code) desc=\(nsError.localizedDescription)，切换 curl 备用通道")
             let data = try CurlFallback.fetch(url, timeout: 12)
             let wallpaper = try decodedWallpaper(from: data)
             cached = (wallpaper, Date())
-            DWLog.net("元数据成功 curl \(data.count) bytes")
+            DayfluxLog.net("元数据成功 curl \(data.count) bytes")
             return wallpaper
         }
     }
 
     private func decodedWallpaper(from data: Data) throws -> Wallpaper {
         let decoded = try JSONDecoder().decode(BingArchiveResponse.self, from: data)
-        guard let image = decoded.images?.first else { throw DWError.emptyData }
+        guard let image = decoded.images?.first else { throw DayfluxError.emptyData }
         return try parse(image)
     }
 
     private func parse(_ image: BingImage) throws -> Wallpaper {
         guard let base = image.urlbase, !base.isEmpty else {
-            throw DWError.missingField("urlbase")
+            throw DayfluxError.missingField("urlbase")
         }
-        // 不接受任意 URL / 路径：接口返回值只能作为相对图片标识使用（规格 7.1）。
+        // 不接受任意 URL / 路径：接口返回值只能作为相对图片标识使用。
         guard base.hasPrefix("/"), !base.contains("://"), !base.contains("..") else {
-            throw DWError.invalidContent("图片地址不符合预期")
+            throw DayfluxError.invalidContent("图片地址不符合预期")
         }
         let host = "https://www.bing.com"
         guard let standard = URL(string: host + base + "_1920x1080.jpg"),
               let uhd = URL(string: host + base + "_UHD.jpg") else {
-            throw DWError.missingField("可解析的图片地址")
+            throw DayfluxError.missingField("可解析的图片地址")
         }
         // UHD 必须用 urlbase 自行拼接；接口 url 带 w/h 缩放参数会退回 1080p。
         return Wallpaper(
-            wallpaperDate: image.enddate ?? image.startdate ?? DWFormat.todayString(),
+            wallpaperDate: image.enddate ?? image.startdate ?? DayfluxFormat.todayString(),
             title: image.title,
             copyright: image.copyright,
             copyrightURL: URL(string: image.copyrightlink ?? ""),
@@ -165,8 +165,10 @@ struct CachedImage {
 final class ImageCache {
     static let shared = ImageCache()
 
-    /// 缓存目录名（2026-11-15 起随品牌统一为 Dayflux）；界面文案与冒烟断言共用，避免路径漂移。
+    /// 缓存目录名；界面文案与冒烟断言共用，避免路径漂移。
     static let directoryName = "Dayflux"
+    /// 缓存文件名前缀；清理逻辑与冒烟断言共用。
+    static let filePrefix = "dayflux_"
 
     let directory: URL
     private let fm = FileManager.default
@@ -200,7 +202,7 @@ final class ImageCache {
         var isDir: ObjCBool = false
         if fm.fileExists(atPath: url.path, isDirectory: &isDir) {
             guard isDir.boolValue else {
-                throw DWError.cache("缓存路径被同名文件占用：\(url.lastPathComponent)")
+                throw DayfluxError.cache("缓存路径被同名文件占用：\(url.lastPathComponent)")
             }
             return
         }
@@ -215,7 +217,7 @@ final class ImageCache {
             try data.write(to: target, options: .atomic)
             return true
         } catch {
-            DWLog.net("缓存写入跳过（不影响本次使用）：\(error.localizedDescription)")
+            DayfluxLog.net("缓存写入跳过（不影响本次使用）：\(error.localizedDescription)")
             return false
         }
     }
@@ -223,7 +225,7 @@ final class ImageCache {
     private func cacheFile(for url: URL) -> URL {
         var hash: UInt64 = 5381
         for byte in url.absoluteString.utf8 { hash = (hash &* 33) &+ UInt64(byte) }
-        return directory.appendingPathComponent("dw_" + String(hash, radix: 16) + ".jpg")
+        return directory.appendingPathComponent(Self.filePrefix + String(hash, radix: 16) + ".jpg")
     }
 
     func load(_ url: URL, force: Bool = false) async throws -> CachedImage {
@@ -235,44 +237,44 @@ final class ImageCache {
                                height: size.height, contentType: "image/jpeg")
         }
 
-        DWLog.net("图片请求开始 \(url.absoluteString)")
+        DayfluxLog.net("图片请求开始 \(url.absoluteString)")
         let data: Data
         do {
             let (temp, response) = try await session.download(from: url)
             defer { try? fm.removeItem(at: temp) }
             guard let http = response as? HTTPURLResponse else {
-                throw DWError.network("无有效 HTTP 响应")
+                throw DayfluxError.network("无有效 HTTP 响应")
             }
-            guard (200..<300).contains(http.statusCode) else { throw DWError.http(http.statusCode) }
+            guard (200..<300).contains(http.statusCode) else { throw DayfluxError.http(http.statusCode) }
             let mime = http.value(forHTTPHeaderField: "Content-Type") ?? ""
             guard mime.lowercased().contains("image") else {
-                throw DWError.invalidContent("响应不是图片（\(mime)）")
+                throw DayfluxError.invalidContent("响应不是图片（\(mime)）")
             }
             data = try Data(contentsOf: temp)
-            DWLog.net("图片成功 URLSession \(data.count) bytes")
+            DayfluxLog.net("图片成功 URLSession \(data.count) bytes")
         } catch {
             let nsError = error as NSError
-            DWLog.net("图片 URLSession 失败 code=\(nsError.code)，切换 curl 备用通道")
+            DayfluxLog.net("图片 URLSession 失败 code=\(nsError.code)，切换 curl 备用通道")
             data = try CurlFallback.fetch(url, timeout: 40)
-            DWLog.net("图片成功 curl \(data.count) bytes")
+            DayfluxLog.net("图片成功 curl \(data.count) bytes")
         }
         guard data.count <= 30 * 1024 * 1024 else {
-            throw DWError.invalidContent("响应超过 30 MB 上限")
+            throw DayfluxError.invalidContent("响应超过 30 MB 上限")
         }
         // curl 通道无法读取 MIME，统一以 JPEG 解码结果作为内容校验（更严格）。
         guard let size = ImageProbe.jpegSize(data) else {
-            throw DWError.invalidContent("JPEG 无法解码")
+            throw DayfluxError.invalidContent("JPEG 无法解码")
         }
         store(data, at: target)
         return CachedImage(data: data, fileURL: target, width: size.width,
                            height: size.height, contentType: "image/jpeg")
     }
 
-    /// 只删除本应用创建的 dw_ 前缀文件，绝不触碰用户保存目录（规格 4.5）。
+    /// 只删除本应用创建的缓存文件，绝不触碰用户保存目录。
     func clear() throws {
         try Self.prepare(directory)
         let items = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-        for item in items where item.lastPathComponent.hasPrefix("dw_") {
+        for item in items where item.lastPathComponent.hasPrefix(Self.filePrefix) {
             try? fm.removeItem(at: item)
         }
     }
@@ -311,10 +313,10 @@ final class StorageService {
         }
         var isDir: ObjCBool = false
         guard fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else {
-            throw DWError.directory("路径不是目录")
+            throw DayfluxError.directory("路径不是目录")
         }
         guard fm.isWritableFile(atPath: url.path) else {
-            throw DWError.directory("无写权限")
+            throw DayfluxError.directory("无写权限")
         }
         return url
     }
@@ -371,14 +373,14 @@ final class DownloadService {
         return fm.fileExists(atPath: url.path)
     }
 
-    /// 临时文件写入 → 校验已完成 → 原子移入；不产生伪完整成品（规格 4.2）。
+    /// 临时文件写入 → 校验已完成 → 原子移入；不产生伪完整成品。
     func save(_ image: CachedImage, wallpaper: Wallpaper, overwrite: Bool) throws -> DownloadOutcome {
         let directory = try StorageService.shared.directory()
         let target = directory.appendingPathComponent(fileName(for: wallpaper))
         let existed = fm.fileExists(atPath: target.path)
         if existed && !overwrite { return .skipped(target) }
 
-        let temp = directory.appendingPathComponent(".dw_tmp_\(UUID().uuidString).jpg")
+        let temp = directory.appendingPathComponent(".dayflux_tmp_\(UUID().uuidString).jpg")
         try image.data.write(to: temp, options: .atomic)
         defer { try? fm.removeItem(at: temp) }
 
@@ -398,7 +400,7 @@ final class DownloadService {
 final class DesktopService {
     static let shared = DesktopService()
 
-    /// 自用版口径：应用到所有已连接显示器，并回读校验主屏确实生效。
+    /// 应用到所有已连接显示器，并回读校验主屏确实生效。
     /// 唤醒 / 登录瞬间桌面服务未就绪时，`setDesktopImageURL` 可能不抛错却不落地；
     /// 若不校验就会误判成功并写下 lastRunDate，导致当天再不重试。
     func apply(_ url: URL) async throws {
@@ -406,7 +408,7 @@ final class DesktopService {
         var detail = ""
         for attempt in 1...3 {
             let screens = NSScreen.screens
-            guard !screens.isEmpty else { throw DWError.desktop("未检测到显示器") }
+            guard !screens.isEmpty else { throw DayfluxError.desktop("未检测到显示器") }
 
             var accepted = 0
             for screen in screens {
@@ -414,7 +416,7 @@ final class DesktopService {
                     try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:])
                     accepted += 1
                 } catch {
-                    DWLog.schedule("桌面设置被拒: \(error.localizedDescription)")
+                    DayfluxLog.schedule("桌面设置被拒: \(error.localizedDescription)")
                 }
             }
 
@@ -425,11 +427,11 @@ final class DesktopService {
             let matched = current?.lastPathComponent == expected
                 || current?.standardizedFileURL.path == url.standardizedFileURL.path
             detail = "accepted=\(accepted)/\(screens.count) 主屏回读=\(current?.lastPathComponent ?? "nil")"
-            DWLog.schedule("桌面校验 第\(attempt)次 \(matched ? "已生效" : "未生效") \(detail)")
+            DayfluxLog.schedule("桌面校验 第\(attempt)次 \(matched ? "已生效" : "未生效") \(detail)")
 
             if matched { return }
         }
-        throw DWError.desktop("壁纸设置后未生效（已重试 3 次：\(detail)）")
+        throw DayfluxError.desktop("壁纸设置后未生效（已重试 3 次：\(detail)）")
     }
 }
 
@@ -473,7 +475,7 @@ final class LaunchAtLoginService {
             if enabled { try SMAppService.mainApp.register() }
             else { try await SMAppService.mainApp.unregister() }
         } else {
-            throw DWError.desktop("当前系统不支持登录启动设置")
+            throw DayfluxError.desktop("当前系统不支持登录启动设置")
         }
     }
 }

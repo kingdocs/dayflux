@@ -63,7 +63,7 @@ final class AppState: ObservableObject {
 
         Task {
             await refresh()
-            // 启动后按当前日期补偿一次，不追溯多日（规格 4.3）；统一走调度器。
+            // 启动后按当前日期补偿一次，不追溯多日；统一走调度器。
             scheduleNext()
         }
     }
@@ -95,7 +95,7 @@ final class AppState: ObservableObject {
             pixelText = "尺寸待获取"
             phase = .success
 
-            // 预览失败不影响下载与其它设置（规格 4.1），单独报告并提供重试。
+            // 预览失败不影响下载与其它设置，单独报告并提供重试。
             do {
                 let image = try await ImageCache.shared.load(
                     wallpaper.imageURL(preferUHD: settings.preferUHD), force: force
@@ -152,7 +152,7 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 已存在成品时询问是否覆盖；任何覆盖必须先取得本次明确操作（规格 2.3）。
+    /// 已存在成品时询问是否覆盖；任何覆盖必须先取得本次明确操作。
     func downloadWithConflictCheck() async {
         guard let wallpaper, DownloadService.shared.fileExists(for: wallpaper) else {
             await download()
@@ -196,7 +196,7 @@ final class AppState: ObservableObject {
             NotificationService.shared.send(title: "Dayflux", body: "桌面壁纸已更新")
             return true
         } catch {
-            // 桌面设置失败不删除已下载文件（规格 4.3）。
+            // 桌面设置失败不删除已下载文件。
             setMessage(describe(error) + " " + hint(for: error), isError: true)
             return false
         }
@@ -278,10 +278,10 @@ final class AppState: ObservableObject {
             lastAttempt: lastScheduledAttempt
         ) else { scheduleNext(); return }
 
-        let today = DWFormat.todayString(now)
+        let today = DayfluxFormat.todayString(now)
         isRunningScheduledTask = true
         lastScheduledAttempt = now
-        DWLog.schedule("开始当天任务 date=\(today)")
+        DayfluxLog.schedule("开始当天任务 date=\(today)")
         Task { @MainActor in
             defer {
                 isRunningScheduledTask = false
@@ -294,9 +294,9 @@ final class AppState: ObservableObject {
                 settings.lastRunDate = today
                 lastScheduledAttempt = nil
                 notBefore = nil
-                DWLog.schedule("任务成功（桌面已回读确认）→ 写入 lastRunDate=\(today)")
+                DayfluxLog.schedule("任务成功（桌面已回读确认）→ 写入 lastRunDate=\(today)")
             } else {
-                DWLog.schedule("任务失败 → 不写 lastRunDate，\(Int(SchedulePolicy.retryInterval / 60)) 分钟后重试")
+                DayfluxLog.schedule("任务失败 → 不写 lastRunDate，\(Int(SchedulePolicy.retryInterval / 60)) 分钟后重试")
                 setMessage("自动任务未完成，将在 5 分钟后重试；已有文件不受影响。", isError: true)
             }
         }
@@ -318,7 +318,7 @@ final class AppState: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
-        DWLog.schedule("下次调度检查 in \(Int(interval))s")
+        DayfluxLog.schedule("下次调度检查 in \(Int(interval))s")
     }
 
     /// 由 AppDelegate 在窗口显隐时通知，决定自动任务后是否保留预览内存。
@@ -360,7 +360,7 @@ final class AppState: ObservableObject {
     }
 
     private func describe(_ error: Error) -> String {
-        if let dwError = error as? DWError { return dwError.localizedDescription }
+        if let appError = error as? DayfluxError { return appError.localizedDescription }
         let nsError = error as NSError
         switch nsError.code {
         case NSURLErrorTimedOut: return "请求超时"
@@ -376,6 +376,6 @@ final class AppState: ObservableObject {
     }
 
     private func hint(for error: Error) -> String {
-        (error as? DWError)?.hint ?? "可重试；已有文件不受影响。"
+        (error as? DayfluxError)?.hint ?? "可重试；已有文件不受影响。"
     }
 }

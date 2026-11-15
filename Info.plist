@@ -5,7 +5,7 @@
   <key>CFBundleExecutable</key>
   <string>Dayflux</string>
   <key>CFBundleIdentifier</key>
-  <string>local.dailywall.selfuse</string>
+  <string>com.kingdocs.dayflux</string>
   <key>CFBundleName</key>
   <string>Dayflux</string>
   <key>CFBundleDisplayName</key>
@@ -13,7 +13,7 @@
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.2.2</string>
+  <string>2.0.0</string>
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>LSMinimumSystemVersion</key>
@@ -25,6 +25,6 @@
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSHumanReadableCopyright</key>
-  <string>仅供自用。壁纸版权归原权利人所有，接口自带「仅限用作桌面壁纸」声明。</string>
+  <string>Copyright (c) 2026 Micheas. MIT License. 壁纸版权归原权利人所有，接口声明「仅限用作桌面壁纸」。</string>
 </dict>
 </plist>

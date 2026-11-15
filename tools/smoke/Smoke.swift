@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-/// M1 冒烟测试：不启动 GUI，验证网络解析、UHD 拼接、下载与冲突策略。
+/// 冒烟测试：不启动 GUI，验证网络解析、UHD 拼接、下载与冲突策略。
 /// 成品只写入 /tmp 下的隔离目录，不触碰 ~/Pictures。
 @main
 struct Smoke {
@@ -12,9 +12,9 @@ struct Smoke {
             if !condition { failures += 1 }
         }
 
-        print("=== Dayflux M1 冒烟测试（无 GUI）===\n")
+        print("=== Dayflux 冒烟测试（无 GUI）===\n")
         let tempDir = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("dw_smoke_out", isDirectory: true)
+            .appendingPathComponent("dayflux_smoke_out", isDirectory: true)
         try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         // 清理本测试目录上一次的残留，保证「首次写入」判定不受历史文件影响。
         if let items = try? FileManager.default.contentsOfDirectory(
@@ -42,7 +42,7 @@ struct Smoke {
             )
             check("图片可解码", image.width > 0 && image.height > 0,
                   "\(image.width)×\(image.height)")
-            check("UHD 实测 3840×2160",
+            check("UHD 尺寸 3840×2160",
                   image.width == 3840 && image.height == 2160,
                   "\(image.width)×\(image.height), \(image.data.count) bytes")
 
@@ -77,7 +77,7 @@ struct Smoke {
             let standard = try await ImageCache.shared.load(
                 wallpaper.imageURL(preferUHD: false), force: false
             )
-            check("标准图实测 1920×1080",
+            check("标准图尺寸 1920×1080",
                   standard.width == 1920 && standard.height == 1080,
                   "\(standard.width)×\(standard.height)")
         } catch {
@@ -89,10 +89,11 @@ struct Smoke {
         // 全程使用 /tmp 下隔离目录，不触碰真实 ~/Library/Caches。
         print("\n=== 缓存目录自愈 ===")
         check("缓存目录名随品牌统一", ImageCache.directoryName == "Dayflux")
+        check("缓存文件名前缀统一", ImageCache.filePrefix == "dayflux_")
         do {
             let fm = FileManager.default
             let isolated = URL(fileURLWithPath: NSTemporaryDirectory())
-                .appendingPathComponent("dw_smoke_cache_selfheal", isDirectory: true)
+                .appendingPathComponent("dayflux_smoke_cache_selfheal", isDirectory: true)
             try? fm.removeItem(at: isolated)
 
             let cache = ImageCache(directory: isolated)
@@ -107,7 +108,7 @@ struct Smoke {
             check("写入前自动重建目录",
                   fm.fileExists(atPath: isolated.path, isDirectory: &isDir) && isDir.boolValue)
 
-            let sample = isolated.appendingPathComponent("dw_test.jpg")
+            let sample = isolated.appendingPathComponent("dayflux_test.jpg")
             check("缓存可写入", cache.store(Data([0xFF, 0xD8, 0xFF]), at: sample)
                   && fm.fileExists(atPath: sample.path))
             try cache.clear()
@@ -121,7 +122,7 @@ struct Smoke {
             do { try ImageCache.prepare(isolated) } catch { prepareThrew = true }
             check("路径被文件占用时明确报错", prepareThrew)
             check("缓存不可写时降级不抛异常",
-                  !blocked.store(Data([0xFF]), at: isolated.appendingPathComponent("dw_x.jpg")))
+                  !blocked.store(Data([0xFF]), at: isolated.appendingPathComponent("dayflux_x.jpg")))
             try? fm.removeItem(at: isolated)
         } catch {
             print("[FAIL] 缓存自愈异常: \(error)")
