@@ -13,11 +13,12 @@ Dayflux.zip
 # 本机构建序号（当天第几次成功编译），换机重新从 1 开始
 .buildcounter
 
-# 界面证据截图：默认仅本机留存，只放行 README 用到的两张
+# 界面证据截图：默认仅本机留存，只放行 README 用到的三张
 tools/*.png
 tools/*.jpg
 !tools/appicon_preview.png
 !tools/main-window.png
+!tools/main-window-preview.png
 
 # 系统与编辑器
 .DS_Store

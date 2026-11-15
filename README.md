@@ -4,9 +4,9 @@
 
 开源、免费的 macOS 菜单栏应用：每天自动获取 Bing 每日壁纸，预览、保存到自选目录、设为桌面。代码采用 [MIT License](LICENSE)。
 
-![Dayflux 主界面](tools/main-window.png)
+<a href="tools/main-window.png"><img src="tools/main-window-preview.png" alt="Dayflux 主界面" width="400"></a>
 
-> 截图中的壁纸缩略图仅用于说明界面，图片版权归原权利人所有。
+> 截图中的壁纸缩略图仅用于说明界面，图片版权归原权利人所有；点击图片可查看原尺寸。
 
 ## 功能
 
