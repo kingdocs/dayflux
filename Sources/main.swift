@@ -57,7 +57,7 @@ private enum DelegateHolder {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var statusMenu: NSMenu?
     private var statusBarAction: StatusBarAction?
@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     }
 
     /// 从启动台 / 访达再次打开时，直接显示主窗口，
-    /// 不需要再从右键菜单里选「打开主窗口」。
+    /// 与左键点击菜单栏图标的行为一致。
     func applicationShouldHandleReopen(_ sender: NSApplication,
                                        hasVisibleWindows flag: Bool) -> Bool {
         dayfluxStatusLog("收到重新打开请求（启动台/访达双击）→ 显示主窗口")
@@ -306,16 +306,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         button.imagePosition = .imageOnly
         button.toolTip = "Dayflux · 左键打开主窗口，右键打开菜单"
 
+        // 菜单内容全部静态：弹出期间不增删项、不改标题，
+        // 避免布局重算造成菜单位置跳动。
         let menu = NSMenu()
-        menu.delegate = self
-        add(menu, "打开主窗口") { [weak self] in self?.showWindow() }
-        menu.addItem(.separator())
-
-        let info = NSMenuItem(title: "今日：获取中…", action: nil, keyEquivalent: "")
-        info.isEnabled = false
-        info.tag = 99
-        menu.addItem(info)
-        menu.addItem(.separator())
 
         add(menu, "立即下载") { [weak self] in
             Task { @MainActor in await self?.state.downloadWithConflictCheck() }
@@ -388,10 +381,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
         menu.addItem(item)
     }
 
-    func menuWillOpen(_ menu: NSMenu) {
-        guard let item = menu.items.first(where: { $0.tag == 99 }) else { return }
-        item.title = "今日：" + (state.wallpaper?.title ?? "获取中…")
-    }
 }
 
 // main.swift 的顶层代码不在 MainActor 隔离上下文；AppDelegate 是 @MainActor，
