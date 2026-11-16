@@ -101,7 +101,7 @@ open build/Dayflux.app
 
 - 当前版本 **2.2.0**；首个公开发布版本为 2.0.0。
 - 三段语义化规则：第 1 位用于新增功能或大的功能性升级，第 2 位用于小的功能性调整，第 3 位**只在纯 BUG 修复时**变更。
-- 主界面右下角页脚形如 `V2.2.0(20261116.5)@Micheas`：软件版本、构建日期与当天第几次成功编译、作者署名。
+- 主界面右下角页脚形如 `V2.2.0(20261116.12)@Micheas`：软件版本、构建日期与当天第几次成功编译、作者署名。
 - 版本号在 `build.sh` 顶部 `APP_VERSION`、署名在 `AUTHOR_TAG`；构建序号由脚本按当天成功次数自动累加（跨天归 1，失败不计数），存于不入库的 `.buildcounter`；`build/generated/BuildInfo.swift` 由脚本生成，页脚与 `Info.plist` 使用同一份值。
 - 各版本发布说明见 [GitHub Releases](https://github.com/kingdocs/dayflux/releases)。
 

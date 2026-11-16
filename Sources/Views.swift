@@ -255,6 +255,10 @@ struct ContentView: View {
         .frame(width: 430)
         .background(Color.white)
         .ignoresSafeArea(edges: .top)
+        // AppKit 按 fittingSize 建窗时会额外加回一个标题栏补偿（约 32pt），
+        // 标题已抬入标题栏、并不需要这段高度，负 bottom padding 抵消它，
+        // 否则页脚下方会多出一条空白。不要在 main.swift 里再 setContentSize，会被布局覆盖。
+        .padding(.bottom, -32)
         .sheet(isPresented: $state.showingSettings) {
             SettingsView(state: state)
         }

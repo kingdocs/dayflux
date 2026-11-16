@@ -138,11 +138,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // 并显式隐藏最小化与绿色缩放/全屏两个标准按钮。
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
-        window.setFrameAutosaveName("DayfluxMainWindow")
+        // 不用 frame autosave：窗口固定右上角、位置由 positionAtTopRight() 决定，
+        // 而 autosave 会在显示时还原旧尺寸（含标题栏补偿），导致页脚下方多出空白。
+        // 高度交给 NSWindow/AppKit：挂载 hosting controller 后系统按 SwiftUI 理想高度
+        // 自动扣除透明标题栏补偿（约 32pt），无需再调 setContentSize。
         let fitting = hosting.view.fittingSize
-        if fitting.height > 200 {
-            window.setContentSize(NSSize(width: 430, height: fitting.height))
-        }
+        dayfluxStatusLog("窗口高度由 AppKit 自适应 fitting=\(fitting.height) 实际=\(window.frame.height)")
         window.center()
         window.delegate = self
     }
