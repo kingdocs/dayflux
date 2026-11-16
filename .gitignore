@@ -9,6 +9,7 @@ signing/.p12-password
 # 构建产物：可由 ./build.sh 重建
 build/
 Dayflux.zip
+Dayflux-*.zip
 *.app/
 # 本机构建序号（当天第几次成功编译），换机重新从 1 开始
 .buildcounter
