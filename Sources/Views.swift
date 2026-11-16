@@ -141,10 +141,12 @@ struct ContentView: View {
                         .minimumScaleFactor(0.8)
                         .layoutPriority(-1)
                 }
-                Spacer(minLength: 0)
-                StatusBadge(text: "今日壁纸")
+                // 外层已有 16pt，再让 32pt 避开左上角关闭按钮。
+                .padding(.leading, 32)
             }
-            .padding(.bottom, 12)
+            // 标题行略高于系统标题栏，文字中心下移到与关闭按钮居中对齐。
+            .frame(height: 38)
+            .padding(.bottom, 8)
 
             previewArea
 
@@ -247,9 +249,12 @@ struct ContentView: View {
             }
             .padding(.top, 10)
         }
-        .padding(16)
+        // 顶部不预留安全区：标题行抬入透明标题栏，去掉上方空白、整体更紧凑。
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
         .frame(width: 430)
         .background(Color.white)
+        .ignoresSafeArea(edges: .top)
         .sheet(isPresented: $state.showingSettings) {
             SettingsView(state: state)
         }
