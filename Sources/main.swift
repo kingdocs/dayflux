@@ -153,31 +153,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if window == nil { buildWindow() }
         state.notifyWindowVisibility(true)
         state.ensurePreviewLoadedIfNeeded()
-        positionNearMouse()
+        // 只在「隐藏 → 显示」时归位；窗口已可见时不再拽回，尊重用户手动挪动的位置。
+        if !window.isVisible { positionAtTopRight() }
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// 把主窗口定位到鼠标光标附近（菜单栏 app 常见行为：窗口出现在光标下方），
-    /// 并约束在光标所在屏幕的可见区域内，避免超出边界被裁切。
-    private func positionNearMouse() {
+    /// 固定定位：菜单栏所在屏幕可见区域的右上角，右边距与顶边距各 20pt。
+    /// visibleFrame 由系统排除菜单栏与 Dock，因此窗口始终贴在菜单栏下方、
+    /// 且不会被右侧 Dock 遮挡；不再读取鼠标位置，启动与右键菜单后位置都一致。
+    private func positionAtTopRight() {
         guard let window = window else { return }
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) })
+        // 状态项所在屏幕就是菜单栏所在屏幕；图标被隐藏时回退到主屏。
+        let screen = statusItem?.button?.window?.screen
             ?? NSScreen.main
-            ?? NSScreen.screens[0]
-        let visible = screen.visibleFrame
-        let size = window.frame.size
-        let margin: CGFloat = 8
-
-        // 窗口顶边贴在鼠标下方 6pt，水平以鼠标为中心
-        var originX = mouse.x - size.width / 2
-        var originY = mouse.y - 6 - size.height
-        if originX < visible.minX + margin { originX = visible.minX + margin }
-        if originX + size.width > visible.maxX - margin { originX = visible.maxX - margin - size.width }
-        if originY < visible.minY + margin { originY = visible.minY + margin }
-        if originY + size.height > visible.maxY - margin { originY = visible.maxY - margin - size.height }
-        window.setFrameOrigin(NSPoint(x: originX, y: originY))
+            ?? NSScreen.screens.first
+        guard let screen else {
+            dayfluxStatusLog("主窗口定位失败：未找到屏幕，保留当前位置")
+            return
+        }
+        let origin = WindowPlacement.topRightOrigin(
+            visibleFrame: screen.visibleFrame,
+            windowSize: window.frame.size
+        )
+        window.setFrameOrigin(origin)
+        dayfluxStatusLog("主窗口定位：右上角 origin=(\(Int(origin.x)), \(Int(origin.y)))")
     }
 
     func windowWillClose(_ notification: Notification) {

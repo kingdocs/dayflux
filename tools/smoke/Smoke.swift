@@ -237,6 +237,34 @@ struct Smoke {
               && cal.component(.minute, from: nextGraceBefore) == 30,
               "\(nextGraceBefore)")
 
+        // 主窗口固定右上角：计算不依赖鼠标位置，窗口完整落在可见区域内。
+        let visible = NSRect(x: 0, y: 0, width: 1512, height: 950)
+        let windowSize = NSSize(width: 430, height: 583)
+        let origin = WindowPlacement.topRightOrigin(visibleFrame: visible,
+                                                    windowSize: windowSize)
+        check("窗口右边距 20pt",
+              abs(visible.maxX - (origin.x + windowSize.width)
+                  - WindowPlacement.edgeMargin) < 0.01, "\(origin.x)")
+        check("窗口顶边距菜单栏下沿 20pt",
+              abs(visible.maxY - (origin.y + windowSize.height)
+                  - WindowPlacement.edgeMargin) < 0.01, "\(origin.y)")
+        check("窗口完整落在可见区域内",
+              origin.x >= visible.minX && origin.y >= visible.minY
+              && origin.x + windowSize.width <= visible.maxX
+              && origin.y + windowSize.height <= visible.maxY)
+        // 右侧 Dock 让 visibleFrame 变窄时，仍贴合新的右边界。
+        let withDock = NSRect(x: 0, y: 0, width: 1400, height: 950)
+        let originDock = WindowPlacement.topRightOrigin(visibleFrame: withDock,
+                                                        windowSize: windowSize)
+        check("右侧 Dock 时仍贴合可见区右缘",
+              abs(withDock.maxX - (originDock.x + windowSize.width) - 20) < 0.01)
+        // 窗口比可见区还大时，左上角仍留在屏内。
+        let tiny = NSRect(x: 100, y: 50, width: 300, height: 300)
+        let originTiny = WindowPlacement.topRightOrigin(visibleFrame: tiny,
+                                                        windowSize: windowSize)
+        check("极小屏幕兜底不越出左上角",
+              originTiny.x == tiny.minX + 20 && originTiny.y == tiny.minY + 20)
+
         print("\n结果: \(failures == 0 ? "全部通过" : "\(failures) 项失败")")
         exit(failures == 0 ? 0 : 1)
     }
